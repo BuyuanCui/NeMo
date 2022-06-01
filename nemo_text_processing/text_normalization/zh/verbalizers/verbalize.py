@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from nemo_text_processing.text_normalization.de.taggers.cardinal import CardinalFst as CardinalTagger
+from nemo_text_processing.text_normalization.de.verbalizers.cardinal import CardinalFst
+from nemo_text_processing.text_normalization.de.verbalizers.date import DateFst
+from nemo_text_processing.text_normalization.de.verbalizers.decimal import DecimalFst
+from nemo_text_processing.text_normalization.de.verbalizers.electronic import ElectronicFst
+from nemo_text_processing.text_normalization.de.verbalizers.fraction import FractionFst
+from nemo_text_processing.text_normalization.de.verbalizers.measure import MeasureFst
+from nemo_text_processing.text_normalization.de.verbalizers.money import MoneyFst
+from nemo_text_processing.text_normalization.de.verbalizers.ordinal import OrdinalFst
+from nemo_text_processing.text_normalization.de.verbalizers.telephone import TelephoneFst
+from nemo_text_processing.text_normalization.de.verbalizers.time import TimeFst
 from nemo_text_processing.text_normalization.en.graph_utils import GraphFst
-from nemo_text_processing.text_normalization.en.verbalizers.abbreviation import AbbreviationFst
-from nemo_text_processing.text_normalization.en.verbalizers.cardinal import CardinalFst
-from nemo_text_processing.text_normalization.en.verbalizers.date import DateFst
-from nemo_text_processing.text_normalization.en.verbalizers.decimal import DecimalFst
-from nemo_text_processing.text_normalization.en.verbalizers.electronic import ElectronicFst
-from nemo_text_processing.text_normalization.en.verbalizers.fraction import FractionFst
-from nemo_text_processing.text_normalization.en.verbalizers.measure import MeasureFst
-from nemo_text_processing.text_normalization.en.verbalizers.money import MoneyFst
-from nemo_text_processing.text_normalization.en.verbalizers.ordinal import OrdinalFst
-from nemo_text_processing.text_normalization.en.verbalizers.roman import RomanFst
-from nemo_text_processing.text_normalization.en.verbalizers.telephone import TelephoneFst
-from nemo_text_processing.text_normalization.en.verbalizers.time import TimeFst
 from nemo_text_processing.text_normalization.en.verbalizers.whitelist import WhiteListFst
 
 
@@ -42,42 +40,37 @@ class VerbalizeFst(GraphFst):
 
     def __init__(self, deterministic: bool = True):
         super().__init__(name="verbalize", kind="verbalize", deterministic=deterministic)
+        cardinal_tagger = CardinalTagger(deterministic=deterministic)
         cardinal = CardinalFst(deterministic=deterministic)
         cardinal_graph = cardinal.fst
-        decimal = DecimalFst(cardinal=cardinal, deterministic=deterministic)
-        decimal_graph = decimal.fst
         ordinal = OrdinalFst(deterministic=deterministic)
         ordinal_graph = ordinal.fst
-        fraction = FractionFst(deterministic=deterministic)
+        decimal = DecimalFst(deterministic=deterministic)
+        decimal_graph = decimal.fst
+        fraction = FractionFst(ordinal=ordinal, deterministic=deterministic)
         fraction_graph = fraction.fst
-        telephone_graph = TelephoneFst(deterministic=deterministic).fst
-        electronic_graph = ElectronicFst(deterministic=deterministic).fst
-        measure = MeasureFst(decimal=decimal, cardinal=cardinal, fraction=fraction, deterministic=deterministic)
+        date = DateFst(ordinal=ordinal)
+        date_graph = date.fst
+        measure = MeasureFst(cardinal=cardinal, decimal=decimal, fraction=fraction, deterministic=deterministic)
         measure_graph = measure.fst
-        time_graph = TimeFst(deterministic=deterministic).fst
-        date_graph = DateFst(ordinal=ordinal, deterministic=deterministic).fst
-        money_graph = MoneyFst(decimal=decimal, deterministic=deterministic).fst
+        electronic = ElectronicFst(deterministic=deterministic)
+        electronic_graph = electronic.fst
         whitelist_graph = WhiteListFst(deterministic=deterministic).fst
+        money_graph = MoneyFst(decimal=decimal).fst
+        telephone_graph = TelephoneFst(deterministic=deterministic).fst
+        time_graph = TimeFst(cardinal_tagger=cardinal_tagger, deterministic=deterministic).fst
 
         graph = (
-            time_graph
-            | date_graph
-            | money_graph
+            cardinal_graph
             | measure_graph
-            | ordinal_graph
             | decimal_graph
-            | cardinal_graph
-            | telephone_graph
+            | ordinal_graph
+            | date_graph
             | electronic_graph
+            | money_graph
             | fraction_graph
             | whitelist_graph
+            | telephone_graph
+            | time_graph
         )
-
-        # roman_graph = RomanFst(deterministic=deterministic).fst
-        # graph |= roman_graph
-
-        if not deterministic:
-            abbreviation_graph = AbbreviationFst(deterministic=deterministic).fst
-            graph |= abbreviation_graph
-
         self.fst = graph

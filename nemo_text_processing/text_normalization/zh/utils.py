@@ -1,4 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 import csv
 import os
 
+from nemo.utils import logging
+
 
 def get_abs_path(rel_path):
     """
@@ -25,7 +27,11 @@ def get_abs_path(rel_path):
         
     Returns absolute path
     """
-    return os.path.dirname(os.path.abspath(__file__)) + '/' + rel_path
+    abs_path = os.path.dirname(os.path.abspath(__file__)) + os.sep + rel_path
+
+    if not os.path.exists(abs_path):
+        logging.warning(f'{abs_path} does not exist')
+    return abs_path
 
 
 def load_labels(abs_path):
@@ -40,21 +46,3 @@ def load_labels(abs_path):
     label_tsv = open(abs_path, encoding="utf-8")
     labels = list(csv.reader(label_tsv, delimiter="\t"))
     return labels
-
-
-def augment_labels_with_punct_at_end(labels):
-    """
-    augments labels: if key ends on a punctuation that value does not have, add a new label 
-    where the value maintains the punctuation
-
-    Args:
-        labels : input labels
-    Returns:
-        additional labels
-    """
-    res = []
-    for label in labels:
-        if len(label) > 1:
-            if label[0][-1] == "." and label[1][-1] != ".":
-                res.append([label[0], label[1] + "."] + label[2:])
-    return res

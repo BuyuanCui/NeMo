@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.text_normalization.en.graph_utils import (
-    NEMO_ALPHA,
-    NEMO_DIGIT,
-    NEMO_SIGMA,
-    GraphFst,
-    delete_space,
-    insert_space,
-    plurals,
-)
-from nemo_text_processing.text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.de.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import NEMO_DIGIT, GraphFst, insert_space
 
 try:
     import pynini
@@ -36,69 +27,52 @@ except (ModuleNotFoundError, ImportError):
 class TelephoneFst(GraphFst):
     """
     Finite state transducer for classifying telephone, which includes country code, number part and extension 
-    country code optional: +*** 
-    number part: ***-***-****, or (***) ***-****
-    extension optional: 1-9999
+
     E.g 
-    +1 123-123-5678-1 -> telephone { country_code: "one" number_part: "one two three, one two three, five six seven eight" extension: "one" }
-    1-800-GO-U-HAUL -> telephone { country_code: "one" number_part: "one, eight hundred GO U HAUL" }
+    "+49 1234-1233" -> telephone { country_code: "plus neun und vierzig" number_part: "eins zwei drei vier eins zwei drei drei" preserve_order: true }
+    "(012) 1234-1233" -> telephone { country_code: "null eins zwei" number_part: "eins zwei drei vier eins zwei drei drei" preserve_order: true }
+    (0**)
+
     Args:
+        cardinal: cardinal GraphFst
         deterministic: if True will provide a single transduction option,
             for False multiple transduction are generated (used for audio-based normalization)
     """
 
-    def __init__(self, deterministic: bool = True):
+    def __init__(self, cardinal: GraphFst, deterministic: bool = True):
         super().__init__(name="telephone", kind="classify", deterministic=deterministic)
 
-        add_separator = pynutil.insert(", ")  # between components
-        digit = pynini.invert(pynini.string_file(get_abs_path("data/cardinal/digit.tsv"))).optimize() | pynini.cross(
-            "0", "o"
+        graph_zero = pynini.invert(pynini.string_file(get_abs_path("data/numbers/zero.tsv"))).optimize()
+        graph_digit_no_zero = pynini.invert(
+            pynini.string_file(get_abs_path("data/numbers/digit.tsv"))
+        ).optimize() | pynini.cross("1", "eins")
+        graph_digit = graph_digit_no_zero | graph_zero
+
+        numbers_with_single_digits = pynini.closure(graph_digit + insert_space) + graph_digit
+
+        two_digit_and_zero = (NEMO_DIGIT ** 2 @ cardinal.two_digit_non_zero) | graph_zero
+        # def add_space_after_two_digit():
+        #     return pynini.closure(two_digit_and_zero + insert_space) + (
+        #         two_digit_and_zero
+        #     )
+
+        country_code = pynini.closure(pynini.cross("+", "plus "), 0, 1) + two_digit_and_zero
+        country_code |= (
+            pynutil.delete("(") + graph_zero + insert_space + numbers_with_single_digits + pynutil.delete(")")
         )
+        country_code |= graph_zero + insert_space + numbers_with_single_digits
 
-        country_code = (
-            pynutil.insert("country_code: \"")
-            + pynini.closure(pynutil.delete("+"), 0, 1)
-            + pynini.closure(digit + insert_space, 0, 2)
-            + digit
-            + pynutil.insert("\"")
-        )
-        country_code = country_code + pynini.closure(pynutil.delete("-"), 0, 1) + delete_space + insert_space
+        country_code = pynutil.insert("country_code: \"") + country_code + pynutil.insert("\"")
 
-        area_part_default = pynini.closure(digit + insert_space, 2, 2) + digit
-        area_part = pynini.cross("800", "eight hundred") | pynini.compose(
-            pynini.difference(NEMO_SIGMA, "800"), area_part_default
-        )
+        del_separator = pynini.cross(pynini.union("-", " "), " ")
+        # numbers_with_two_digits = pynini.closure(graph_digit + insert_space) + add_space_after_two_digit() + pynini.closure(insert_space + graph_digit)
+        # numbers = numbers_with_two_digits + pynini.closure(del_separator + numbers_with_two_digits, 0, 1)
+        numbers = numbers_with_single_digits + pynini.closure(del_separator + numbers_with_single_digits, 0, 1)
+        number_length = pynini.closure((NEMO_DIGIT | pynini.union("-", " ", ")", "(")), 7)
+        number_part = pynini.compose(number_length, numbers)
+        number = pynutil.insert("number_part: \"") + number_part + pynutil.insert("\"")
 
-        area_part = (
-            (area_part + pynutil.delete("-"))
-            | (pynutil.delete("(") + area_part + (pynutil.delete(") ") | pynutil.delete(")-")))
-        ) + add_separator
-
-        del_separator = pynini.closure(pynini.union("-", " "), 0, 1)
-        number_length = ((NEMO_DIGIT + del_separator) | (NEMO_ALPHA + del_separator)) ** 7
-        number_words = pynini.closure(
-            (NEMO_DIGIT @ digit) + (insert_space | pynini.cross("-", ', '))
-            | NEMO_ALPHA
-            | (NEMO_ALPHA + pynini.cross("-", ' '))
-        )
-        number_words = pynini.compose(number_length, number_words)
-        number_part = area_part + number_words
-        number_part = pynutil.insert("number_part: \"") + number_part + pynutil.insert("\"")
-        extension = (
-            pynutil.insert("extension: \"") + pynini.closure(digit + insert_space, 0, 3) + digit + pynutil.insert("\"")
-        )
-        extension = pynini.closure(insert_space + extension, 0, 1)
-
-        graph = plurals._priority_union(country_code + number_part, number_part, NEMO_SIGMA).optimize()
-        graph = plurals._priority_union(country_code + number_part + extension, graph, NEMO_SIGMA).optimize()
-        graph = plurals._priority_union(number_part + extension, graph, NEMO_SIGMA).optimize()
-
-        # ip
-        digit_to_str_graph = pynini.compose(
-            NEMO_DIGIT ** (1, 3), digit + pynini.closure(pynutil.insert(" ") + digit)
-        ).optimize()
-        ip_graph = digit_to_str_graph + (pynini.cross(".", " dot ") + digit_to_str_graph) ** 3
-        graph |= pynutil.insert("number_part: \"") + ip_graph.optimize() + pynutil.insert("\"")
-
-        final_graph = self.add_tokens(graph)
+        graph = country_code + pynini.accep(" ") + number
+        self.graph = graph
+        final_graph = self.add_tokens(self.graph + pynutil.insert(" preserve_order: true"))
         self.fst = final_graph.optimize()

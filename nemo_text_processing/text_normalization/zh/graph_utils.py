@@ -26,13 +26,16 @@ try:
     from pynini.export import export
     from pynini.examples import plurals
     from pynini.lib import byte, pynutil, utf8
+    from nemo_text_processing.text_normalization.zh.util import get_abs_path
 
     NEMO_CHAR = utf8.VALID_UTF8_CHAR
 
     NEMO_DIGIT = byte.DIGIT #“一二三”
+   # NEMO_DIGIT = pynini.string_file(get_abs_path("data/numbers/cardinal/digits.tsv"))
     NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize() # define instead of ascii but someting that reads mandarin
     NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
     NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
+        
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()
     NEMO_HEX = pynini.union(*string.hexdigits).optimize()
     NEMO_NON_BREAKING_SPACE = u"\u00A0"
@@ -237,3 +240,5 @@ class GraphFst:
             + pynutil.delete("}")
         )
         return res @ pynini.cdrewrite(pynini.cross(u"\u00A0", " "), "", "", NEMO_SIGMA)
+        
+print(NEMO_DIGIT)

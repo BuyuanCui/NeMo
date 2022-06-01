@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,132 +12,194 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 
+from nemo_text_processing.text_normalization.de.utils import get_abs_path, load_labels
 from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_DIGIT,
-    NEMO_NOT_QUOTE,
     NEMO_SIGMA,
     GraphFst,
+    delete_space,
     insert_space,
 )
-from nemo_text_processing.text_normalization.en.taggers.date import get_four_digit_year_graph
-from nemo_text_processing.text_normalization.en.utils import get_abs_path
 
 try:
     import pynini
     from pynini.lib import pynutil
-    from pynini.examples import plurals
 
     PYNINI_AVAILABLE = True
 except (ModuleNotFoundError, ImportError):
     PYNINI_AVAILABLE = False
 
+AND = "und"
+
+
+def get_ties_digit(digit_path: str, tie_path: str) -> 'pynini.FstLike':
+    """
+    getting all inverse normalizations for numbers between 21 - 100
+
+    Args:
+        digit_path: file to digit tsv
+        tie_path: file to tie tsv, e.g. 20, 30, etc.
+    Returns:
+        res: fst that converts numbers to their verbalization
+    """
+
+    digits = defaultdict(list)
+    ties = defaultdict(list)
+    for k, v in load_labels(digit_path):
+        digits[v].append(k)
+    digits["1"] = ["ein"]
+
+    for k, v in load_labels(tie_path):
+        ties[v].append(k)
+
+    d = []
+    for i in range(21, 100):
+        s = str(i)
+        if s[1] == "0":
+            continue
+
+        for di in digits[s[1]]:
+            for ti in ties[s[0]]:
+                word = di + f" {AND} " + ti
+                d.append((word, s))
+
+    res = pynini.string_map(d)
+    return res
+
 
 class CardinalFst(GraphFst):
     """
     Finite state transducer for classifying cardinals, e.g. 
-        -23 -> cardinal { negative: "true"  integer: "twenty three" } }
+        "101" ->  cardinal { integer: "ein hundert und zehn" }
 
     Args:
         deterministic: if True will provide a single transduction option,
             for False multiple transduction are generated (used for audio-based normalization)
     """
 
-    def __init__(self, deterministic: bool = True, lm: bool = False):
+    def __init__(self, deterministic: bool = False):
         super().__init__(name="cardinal", kind="classify", deterministic=deterministic)
 
-        self.lm = lm
-        self.deterministic = deterministic
-        # TODO replace to have "oh" as a default for "0"
-        graph = pynini.Far(get_abs_path("data/cardinal/cardinal_number_name.far")).get_fst()
+        graph_zero = pynini.string_file(get_abs_path("data/numbers/zero.tsv")).invert()
+        graph_digit_no_one = pynini.string_file(get_abs_path("data/numbers/digit.tsv")).invert()
+        graph_one = pynini.string_file(get_abs_path("data/numbers/ones.tsv")).invert()
+        graph_digit = graph_digit_no_one | graph_one
+        self.digit = (graph_digit | graph_zero).optimize()
+        graph_teen = pynini.string_file(get_abs_path("data/numbers/teen.tsv")).invert()
+
+        graph_ties = pynini.string_file(get_abs_path("data/numbers/ties.tsv")).invert()
+        # separator = "."
+
+        def tens_no_zero():
+            return (
+                pynutil.delete("0") + graph_digit
+                | get_ties_digit(
+                    get_abs_path("data/numbers/digit.tsv"), get_abs_path("data/numbers/ties.tsv")
+                ).invert()
+                | graph_teen
+                | (graph_ties + pynutil.delete("0"))
+            )
+
+        def hundred_non_zero():
+            return (graph_digit_no_one + insert_space | pynini.cross("1", "ein ")) + pynutil.insert("hundert") + (
+                pynini.closure(insert_space + pynutil.insert(AND, weight=0.0001), 0, 1) + insert_space + tens_no_zero()
+                | pynutil.delete("00")
+            ) | pynutil.delete("0") + tens_no_zero()
+
+        def thousand():
+            return (hundred_non_zero() + insert_space + pynutil.insert("tausend") | pynutil.delete("000")) + (
+                insert_space + hundred_non_zero() | pynutil.delete("000")
+            )
+
+        optional_plural_quantity_en = pynini.closure(pynutil.insert("en", weight=-0.0001), 0, 1)
+        optional_plural_quantity_n = pynini.closure(pynutil.insert("n", weight=-0.0001), 0, 1)
+        graph_million = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("million") + optional_plural_quantity_en,
+            pynutil.delete("000"),
+        )
+
+        graph_billion = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("milliarde") + optional_plural_quantity_n,
+            pynutil.delete("000"),
+        )
+
+        graph_trillion = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("billion") + optional_plural_quantity_en,
+            pynutil.delete("000"),
+        )
+
+        graph_quadrillion = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("billiarde") + optional_plural_quantity_n,
+            pynutil.delete("000"),
+        )
+
+        graph_quintillion = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("trillion") + optional_plural_quantity_en,
+            pynutil.delete("000"),
+        )
+
+        graph_sextillion = pynini.union(
+            hundred_non_zero() + insert_space + pynutil.insert("trilliarde") + optional_plural_quantity_n,
+            pynutil.delete("000"),
+        )
+        graph = pynini.union(
+            graph_sextillion
+            + insert_space
+            + graph_quintillion
+            + insert_space
+            + graph_quadrillion
+            + insert_space
+            + graph_trillion
+            + insert_space
+            + graph_billion
+            + insert_space
+            + graph_million
+            + insert_space
+            + thousand()
+        )
+
+        fix_syntax = [
+            ("eins tausend", "ein tausend"),
+            ("eins millionen", "eine million"),
+            ("eins milliarden", "eine milliarde"),
+            ("eins billionen", "eine billion"),
+            ("eins billiarden", "eine billiarde"),
+        ]
+        fix_syntax = pynini.union(*[pynini.cross(*x) for x in fix_syntax])
+        self.graph = (
+            ((NEMO_DIGIT - "0" + pynini.closure(NEMO_DIGIT, 0)) - "0" - "1")
+            @ pynini.cdrewrite(pynini.closure(pynutil.insert("0")), "[BOS]", "", NEMO_SIGMA)
+            @ NEMO_DIGIT ** 24
+            @ graph
+            @ pynini.cdrewrite(delete_space, "[BOS]", "", NEMO_SIGMA)
+            @ pynini.cdrewrite(delete_space, "", "[EOS]", NEMO_SIGMA)
+            @ pynini.cdrewrite(pynini.cross("  ", " "), "", "", NEMO_SIGMA)
+            @ pynini.cdrewrite(fix_syntax, "[BOS]", "", NEMO_SIGMA)
+        )
+        self.graph |= graph_zero | pynini.cross("1", "eins")
+
+        # self.graph = pynini.cdrewrite(pynutil.delete(separator), "", "", NEMO_SIGMA) @ self.graph
+        self.graph = self.graph.optimize()
+
         self.graph_hundred_component_at_least_one_none_zero_digit = (
-            pynini.closure(NEMO_DIGIT, 2, 3) | pynini.difference(NEMO_DIGIT, pynini.accep("0"))
-        ) @ graph
+            ((NEMO_DIGIT - "0" + pynini.closure(NEMO_DIGIT, 0)) - "0" - "1")
+            @ pynini.cdrewrite(pynini.closure(pynutil.insert("0")), "[BOS]", "", NEMO_SIGMA)
+            @ NEMO_DIGIT ** 3
+            @ hundred_non_zero()
+        ) | pynini.cross("1", "eins")
 
-        graph_digit = pynini.string_file(get_abs_path("data/cardinal/digit.tsv"))
-        graph_zero = pynini.string_file(get_abs_path("data/cardinal/zero.tsv"))
+        self.graph_hundred_component_at_least_one_none_zero_digit = (
+            self.graph_hundred_component_at_least_one_none_zero_digit.optimize()
+        )
 
-        single_digits_graph = pynini.invert(graph_digit | graph_zero)
-        self.single_digits_graph = single_digits_graph + pynini.closure(insert_space + single_digits_graph)
-
-        if not deterministic:
-            # for a single token allow only the same normalization
-            # "007" -> {"oh oh seven", "zero zero seven"} not {"oh zero seven"}
-            single_digits_graph_zero = pynini.invert(graph_digit | graph_zero)
-            single_digits_graph_oh = pynini.invert(graph_digit) | pynini.cross("0", "oh")
-
-            self.single_digits_graph = single_digits_graph_zero + pynini.closure(
-                insert_space + single_digits_graph_zero
-            )
-            self.single_digits_graph |= single_digits_graph_oh + pynini.closure(insert_space + single_digits_graph_oh)
-
-            single_digits_graph_with_commas = pynini.closure(
-                self.single_digits_graph + insert_space, 1, 3
-            ) + pynini.closure(
-                pynutil.delete(",")
-                + single_digits_graph
-                + insert_space
-                + single_digits_graph
-                + insert_space
-                + single_digits_graph,
-                1,
-            )
+        self.two_digit_non_zero = (
+            pynini.closure(NEMO_DIGIT, 1, 2) @ self.graph_hundred_component_at_least_one_none_zero_digit
+        )
 
         optional_minus_graph = pynini.closure(pynutil.insert("negative: ") + pynini.cross("-", "\"true\" "), 0, 1)
 
-        graph = (
-            pynini.closure(NEMO_DIGIT, 1, 3)
-            + (pynini.closure(pynutil.delete(",") + NEMO_DIGIT ** 3) | pynini.closure(NEMO_DIGIT ** 3))
-        ) @ graph
-
-        self.graph = graph
-        self.graph_with_and = self.add_optional_and(graph)
-
-        if deterministic:
-            long_numbers = pynini.compose(NEMO_DIGIT ** (5, ...), self.single_digits_graph).optimize()
-            final_graph = plurals._priority_union(long_numbers, self.graph_with_and, NEMO_SIGMA).optimize()
-            cardinal_with_leading_zeros = pynini.compose(
-                pynini.accep("0") + pynini.closure(NEMO_DIGIT), self.single_digits_graph
-            )
-            final_graph |= cardinal_with_leading_zeros
-        else:
-            leading_zeros = pynini.compose(pynini.closure(pynini.accep("0"), 1), self.single_digits_graph)
-            cardinal_with_leading_zeros = (
-                leading_zeros + pynutil.insert(" ") + pynini.compose(pynini.closure(NEMO_DIGIT), self.graph_with_and)
-            )
-
-            # add small weight to non-default graphs to make sure the deterministic option is listed first
-            final_graph = (
-                self.graph_with_and
-                | pynutil.add_weight(self.single_digits_graph, 0.0001)
-                | get_four_digit_year_graph()  # allows e.g. 4567 be pronouced as forty five sixty seven
-                | pynutil.add_weight(single_digits_graph_with_commas, 0.0001)
-                | cardinal_with_leading_zeros
-            )
-
-        final_graph = optional_minus_graph + pynutil.insert("integer: \"") + final_graph + pynutil.insert("\"")
+        final_graph = optional_minus_graph + pynutil.insert("integer: \"") + self.graph + pynutil.insert("\"")
         final_graph = self.add_tokens(final_graph)
         self.fst = final_graph.optimize()
-
-    def add_optional_and(self, graph):
-        if not self.deterministic:
-            graph = pynini.compose(
-                graph, NEMO_SIGMA + pynini.closure(pynini.cross("hundred ", " "), 0, 1) + NEMO_SIGMA
-            )
-
-        not_quote = pynini.closure(NEMO_NOT_QUOTE)
-        no_thousand_million = pynini.difference(
-            not_quote, not_quote + pynini.union("thousand", "million") + not_quote
-        ).optimize()
-        integer = (
-            not_quote + pynutil.add_weight(pynini.cross("hundred ", "hundred and ") + no_thousand_million, -0.0001)
-        ).optimize()
-
-        no_hundred = pynini.difference(NEMO_SIGMA, not_quote + pynini.accep("hundred") + not_quote).optimize()
-        integer |= (
-            not_quote + pynutil.add_weight(pynini.cross("thousand ", "thousand and ") + no_hundred, -0.0001)
-        ).optimize()
-
-        graph_with_and = pynini.compose(graph, integer).optimize() | pynutil.add_weight(graph, 0.00001)
-
-        return graph_with_and

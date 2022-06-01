@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.text_normalization.en.graph_utils import GraphFst, get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import GraphFst
 
 try:
     import pynini
@@ -27,12 +26,11 @@ except (ModuleNotFoundError, ImportError):
 class FractionFst(GraphFst):
     """
     Finite state transducer for classifying fraction
-    "23 4/5" ->
-    tokens { fraction { integer: "twenty three" numerator: "four" denominator: "five" } }
-    "23 4/5th" ->
-    tokens { fraction { integer: "twenty three" numerator: "four" denominator: "five" } }
+    "23 4/6" ->
+    fraction { integer: "drei und zwanzig" numerator: "vier" denominator: "sechs" preserve_order: true }
 
     Args:
+        cardinal: cardinal GraphFst
         deterministic: if True will provide a single transduction option,
             for False multiple transduction are generated (used for audio-based normalization)
     """
@@ -41,22 +39,22 @@ class FractionFst(GraphFst):
         super().__init__(name="fraction", kind="classify", deterministic=deterministic)
         cardinal_graph = cardinal.graph
 
-        integer = pynutil.insert("integer_part: \"") + cardinal_graph + pynutil.insert("\"")
-        numerator = (
-            pynutil.insert("numerator: \"") + cardinal_graph + (pynini.cross("/", "\" ") | pynini.cross(" / ", "\" "))
+        self.optional_graph_negative = pynini.closure(
+            pynutil.insert("negative: ") + pynini.cross("-", "\"true\" "), 0, 1
+        )
+        self.integer = pynutil.insert("integer_part: \"") + cardinal_graph + pynutil.insert("\"")
+        self.numerator = (
+            pynutil.insert("numerator: \"") + cardinal_graph + pynini.cross(pynini.union("/", " / "), "\" ")
+        )
+        self.denominator = pynutil.insert("denominator: \"") + cardinal_graph + pynutil.insert("\"")
+
+        self.graph = (
+            self.optional_graph_negative
+            + pynini.closure(self.integer + pynini.accep(" "), 0, 1)
+            + self.numerator
+            + self.denominator
         )
 
-        endings = ["rd", "th", "st", "nd"]
-        endings += [x.upper() for x in endings]
-        optional_end = pynini.closure(pynini.cross(pynini.union(*endings), ""), 0, 1)
-
-        denominator = pynutil.insert("denominator: \"") + cardinal_graph + optional_end + pynutil.insert("\"")
-
-        graph = pynini.closure(integer + pynini.accep(" "), 0, 1) + (numerator + denominator)
-        graph |= pynini.closure(integer + (pynini.accep(" ") | pynutil.insert(" ")), 0, 1) + pynini.compose(
-            pynini.string_file(get_abs_path("data/cardinal/fraction.tsv")), (numerator + denominator)
-        )
-
-        self.graph = graph
-        final_graph = self.add_tokens(self.graph)
+        graph = self.graph + pynutil.insert(" preserve_order: true")
+        final_graph = self.add_tokens(graph)
         self.fst = final_graph.optimize()

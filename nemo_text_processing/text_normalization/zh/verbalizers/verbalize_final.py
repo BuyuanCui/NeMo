@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from nemo_text_processing.text_normalization.de.verbalizers.verbalize import VerbalizeFst
 from nemo_text_processing.text_normalization.en.graph_utils import GraphFst, delete_extra_space, delete_space
-from nemo_text_processing.text_normalization.en.verbalizers.verbalize import VerbalizeFst
 from nemo_text_processing.text_normalization.en.verbalizers.word import WordFst
 
 try:
@@ -28,9 +27,8 @@ except (ModuleNotFoundError, ImportError):
 
 class VerbalizeFinalFst(GraphFst):
     """
-    Finite state transducer that verbalizes an entire sentence, e.g.
-    tokens { name: "its" } tokens { time { hours: "twelve" minutes: "thirty" } } tokens { name: "now" } tokens { name: "." } -> its twelve thirty now .
-
+    Finite state transducer that verbalizes an entire sentence
+    
     Args:
         deterministic: if True will provide a single transduction option,
             for False multiple options (used for audio-based normalization)
@@ -40,19 +38,16 @@ class VerbalizeFinalFst(GraphFst):
         super().__init__(name="verbalize_final", kind="verbalize", deterministic=deterministic)
         verbalize = VerbalizeFst(deterministic=deterministic).fst
         word = WordFst(deterministic=deterministic).fst
-        types = verbalize | word
 
-        if deterministic:
-            graph = (
-                pynutil.delete("tokens")
-                + delete_space
-                + pynutil.delete("{")
-                + delete_space
-                + types
-                + delete_space
-                + pynutil.delete("}")
-            )
-        else:
-            graph = delete_space + types + delete_space
+        types = verbalize | word
+        graph = (
+            pynutil.delete("tokens")
+            + delete_space
+            + pynutil.delete("{")
+            + delete_space
+            + types
+            + delete_space
+            + pynutil.delete("}")
+        )
         graph = delete_space + pynini.closure(graph + delete_extra_space) + graph + delete_space
         self.fst = graph

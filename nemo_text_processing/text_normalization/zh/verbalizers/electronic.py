@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from nemo_text_processing.text_normalization.de.utils import get_abs_path
 from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_NOT_QUOTE,
     NEMO_SIGMA,
     GraphFst,
-    delete_space,
+    delete_preserve_order,
     insert_space,
 )
-from nemo_text_processing.text_normalization.en.utils import get_abs_path
 
 try:
     import pynini
     from pynini.lib import pynutil
-    from pynini.examples import plurals
 
     PYNINI_AVAILABLE = True
 except (ModuleNotFoundError, ImportError):
@@ -35,8 +33,10 @@ except (ModuleNotFoundError, ImportError):
 class ElectronicFst(GraphFst):
     """
     Finite state transducer for verbalizing electronic
-        e.g. tokens { electronic { username: "cdf1" domain: "abc.edu" } } -> c d f one at a b c dot e d u
-
+        e.g. electronic { username: "abc" domain: "hotmail.com" } -> "a b c at hotmail punkt com"
+                                                           -> "a b c at h o t m a i l punkt c o m"
+                                                           -> "a b c at hotmail punkt c o m"
+                                                           -> "a b c at h o t m a i l punkt com"
     Args:
         deterministic: if True will provide a single transduction option,
         for False multiple transduction are generated (used for audio-based normalization)
@@ -44,106 +44,37 @@ class ElectronicFst(GraphFst):
 
     def __init__(self, deterministic: bool = True):
         super().__init__(name="electronic", kind="verbalize", deterministic=deterministic)
-        graph_digit_no_zero = pynini.invert(pynini.string_file(get_abs_path("data/cardinal/digit.tsv"))).optimize()
-        graph_zero = pynini.cross("0", "zero")
-
-        if not deterministic:
-            graph_zero |= pynini.cross("0", "o") | pynini.cross("0", "oh")
-
+        graph_digit_no_zero = pynini.invert(
+            pynini.string_file(get_abs_path("data/numbers/digit.tsv"))
+        ).optimize() | pynini.cross("1", "eins")
+        graph_zero = pynini.invert(pynini.string_file(get_abs_path("data/numbers/zero.tsv"))).optimize()
         graph_digit = graph_digit_no_zero | graph_zero
-        graph_symbols = pynini.string_file(get_abs_path("data/electronic/symbol.tsv")).optimize()
-        chars = pynini.difference(NEMO_NOT_QUOTE, pynini.project(graph_symbols, "input"))
-        user_name = (
-            pynutil.delete("username:")
-            + delete_space
-            + pynutil.delete("\"")
-            + (
-                pynini.closure(
-                    pynutil.add_weight(graph_digit + insert_space, 0.00009)
-                    | pynutil.add_weight(pynini.closure(graph_symbols + insert_space), 0.00009)
-                    | pynutil.add_weight(chars + insert_space, 0.0001)
-                )
-            )
-            + pynutil.delete("\"")
-        )
-
-        server_common = pynini.string_file(get_abs_path("data/electronic/server.tsv"))
+        graph_symbols = pynini.string_file(get_abs_path("data/electronic/symbols.tsv")).optimize()
+        server_common = pynini.string_file(get_abs_path("data/electronic/server_name.tsv"))
         domain_common = pynini.string_file(get_abs_path("data/electronic/domain.tsv"))
 
-        default_chars_symbols = (
-            (chars | graph_symbols) + pynini.closure(insert_space + (chars | graph_symbols))
-        ).optimize()
+        def add_space_after_char():
+            return pynini.closure(NEMO_NOT_QUOTE - pynini.accep(" ") + insert_space) + (
+                NEMO_NOT_QUOTE - pynini.accep(" ")
+            )
 
-        # nvidia.com
-        common_server_common_domain = server_common + insert_space + domain_common
-        common_server_common_domain |= common_server_common_domain + pynini.closure(
-            insert_space + pynini.cross(".", "dot ") + default_chars_symbols,
-        )
+        verbalize_characters = pynini.cdrewrite(graph_symbols | graph_digit, "", "", NEMO_SIGMA)
 
-        # unknown.com
-        default_server_common_domain_input = (
-            pynini.difference(NEMO_SIGMA, pynini.project(server_common, "input"))
-            + pynini.project(domain_common, "input")
-            + NEMO_SIGMA
-        )
-        default_server_common_domain = pynini.compose(
-            default_server_common_domain_input,
-            default_chars_symbols
-            + insert_space
-            + domain_common
-            + pynini.closure(insert_space + (chars | graph_symbols)),
-        ).optimize()
+        user_name = pynutil.delete("username: \"") + add_space_after_char() + pynutil.delete("\"")
+        user_name @= verbalize_characters
 
-        # nvidia.unknown
-        common_server_default_domain_input = (
-            pynini.project(server_common, "input")
-            + pynini.difference(NEMO_SIGMA, pynini.project(domain_common, "input")).optimize()
-        )
-        common_server_default_domain = pynini.compose(
-            common_server_default_domain_input,
-            server_common + insert_space + pynini.compose(pynini.accep(".") + NEMO_SIGMA, default_chars_symbols),
-        ).optimize()
+        convert_defaults = pynutil.add_weight(NEMO_NOT_QUOTE, weight=0.0001) | domain_common | server_common
+        domain = convert_defaults + pynini.closure(insert_space + convert_defaults)
+        domain @= verbalize_characters
 
-        # unknown.unknown
-        non_common_input = pynini.difference(
-            NEMO_SIGMA,
-            pynini.project(server_common, "input") + pynini.project(domain_common, "input")
-            | default_server_common_domain_input
-            | common_server_default_domain_input,
-        ).optimize()
-        default_domain = pynini.compose(
-            non_common_input,
-            default_chars_symbols
-            + insert_space
-            + pynini.compose(pynini.accep(".") + NEMO_SIGMA, default_chars_symbols),
-        ).optimize()
-
-        domain = plurals._priority_union(
-            common_server_common_domain,
-            plurals._priority_union(
-                default_server_common_domain | common_server_default_domain, default_domain, NEMO_SIGMA
-            ),
-            NEMO_SIGMA,
-        ).optimize()
-
-        domain = (
-            pynutil.delete("domain:")
-            + delete_space
+        domain = pynutil.delete("domain: \"") + domain + pynutil.delete("\"")
+        protocol = (
+            pynutil.delete("protocol: \"")
+            + add_space_after_char() @ pynini.cdrewrite(graph_symbols, "", "", NEMO_SIGMA)
             + pynutil.delete("\"")
-            + domain
-            + delete_space
-            + pynutil.delete("\"")
-        ).optimize()
-
-        domain @= pynini.cdrewrite(pynutil.add_weight(graph_digit, -0.0001), "", "", NEMO_SIGMA)
-
-        protocol = pynutil.delete("protocol: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
-        graph = (
-            pynini.closure(protocol + delete_space, 0, 1)
-            + pynini.closure(user_name + delete_space + pynutil.insert("at ") + delete_space, 0, 1)
-            + domain
-            + delete_space
-        ).optimize()
-
-        delete_tokens = self.delete_tokens(graph)
+        )
+        self.graph = (pynini.closure(protocol + pynini.accep(" "), 0, 1) + domain) | (
+            user_name + pynini.accep(" ") + pynutil.insert("at ") + domain
+        )
+        delete_tokens = self.delete_tokens(self.graph + delete_preserve_order)
         self.fst = delete_tokens.optimize()

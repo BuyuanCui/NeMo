@@ -1,5 +1,4 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
-# Copyright 2015 and onwards Google, Inc.
+# Copyright (c) 2021, NVIDIA CORPORATION & AFFILIATES.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.text_normalization.en.graph_utils import (
-    NEMO_NOT_QUOTE,
-    GraphFst,
-    delete_extra_space,
-    delete_preserve_order,
-)
+from nemo_text_processing.text_normalization.en.graph_utils import NEMO_NOT_QUOTE, GraphFst, delete_preserve_order
 
 try:
     import pynini
@@ -33,49 +27,54 @@ except (ModuleNotFoundError, ImportError):
 class MoneyFst(GraphFst):
     """
     Finite state transducer for verbalizing money, e.g.
-        money { integer_part: "twelve" fractional_part: "o five" currency: "dollars" } -> twelve o five dollars
+        money { currency_maj: "euro" integer_part: "ein"} -> "ein euro"
+        money { currency_maj: "euro" integer_part: "eins" fractional_part: "null null eins"} -> "eins komma null null eins euro"
+        money { integer_part: "ein" currency_maj: "pfund" fractional_part: "vierzig" preserve_order: true} -> "ein pfund vierzig"
+        money { integer_part: "ein" currency_maj: "pfund" fractional_part: "vierzig" currency_min: "pence" preserve_order: true} -> "ein pfund vierzig pence"
+        money { fractional_part: "ein" currency_min: "penny" preserve_order: true} -> "ein penny"
+        money { currency_maj: "pfund" integer_part: "null" fractional_part: "null eins" quantity: "million"} -> "null komma null eins million pfund"
 
     Args:
-        decimal: DecimalFst
+        decimal: GraphFst
         deterministic: if True will provide a single transduction option,
             for False multiple transduction are generated (used for audio-based normalization)
     """
 
     def __init__(self, decimal: GraphFst, deterministic: bool = True):
         super().__init__(name="money", kind="verbalize", deterministic=deterministic)
-        if deterministic or True:
-            keep_space = pynini.accep(" ")
-            maj = pynutil.delete("currency_maj: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
-            min = pynutil.delete("currency_min: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
 
-            fractional_part = (
-                pynutil.delete("fractional_part: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
-            )
+        keep_space = pynini.accep(" ")
 
-            integer_part = decimal.integer
+        maj = pynutil.delete("currency_maj: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
+        min = pynutil.delete("currency_min: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
 
-            optional_add_and = pynini.closure(pynutil.insert("and "), 0, 1)
+        fractional_part = (
+            pynutil.delete("fractional_part: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
+        )
 
-            #  *** currency_maj
-            graph_integer = integer_part + keep_space + maj
+        integer_part = pynutil.delete("integer_part: \"") + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete("\"")
+        optional_add_and = pynini.closure(pynutil.insert("und "), 0, 1)
 
-            #  *** currency_maj + (***) | ((and) *** current_min)
-            fractional = optional_add_and + fractional_part + delete_extra_space + min
+        #  *** currency_maj
+        graph_integer = integer_part + keep_space + maj
 
-            graph_integer_with_minor = (
-                integer_part + keep_space + maj + keep_space + fractional + delete_preserve_order
-            )
+        #  *** currency_maj + (***) | ((und) *** current_min)
+        graph_integer_with_minor = (
+            integer_part
+            + keep_space
+            + maj
+            + keep_space
+            + (fractional_part | (optional_add_and + fractional_part + keep_space + min))
+            + delete_preserve_order
+        )
 
-            # *** point *** currency_maj
-            graph_decimal = decimal.numbers + keep_space + maj
+        # *** komma *** currency_maj
+        graph_decimal = decimal.fst + keep_space + maj
 
-            # *** current_min
-            graph_minor = fractional_part + delete_extra_space + min + delete_preserve_order
+        # *** current_min
+        graph_minor = fractional_part + keep_space + min + delete_preserve_order
 
-            graph = graph_integer | graph_integer_with_minor | graph_decimal | graph_minor
-
-            if not deterministic:
-                graph |= graph_integer + delete_preserve_order
+        graph = graph_integer | graph_integer_with_minor | graph_decimal | graph_minor
 
         delete_tokens = self.delete_tokens(graph)
         self.fst = delete_tokens.optimize()
