@@ -15,19 +15,19 @@
 
 import os
 
-from nemo_text_processing.inverse_text_normalization.en.taggers.cardinal import CardinalFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.date import DateFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.decimal import DecimalFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.electronic import ElectronicFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.measure import MeasureFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.money import MoneyFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.ordinal import OrdinalFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.punctuation import PunctuationFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.telephone import TelephoneFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.time import TimeFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.whitelist import WhiteListFst
-from nemo_text_processing.inverse_text_normalization.en.taggers.word import WordFst
-from nemo_text_processing.text_normalization.en.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.date import DateFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.decimal import DecimalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.electronic import ElectronicFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.measure import MeasureFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.money import MoneyFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.ordinal import OrdinalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.punctuation import PunctuationFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.telephone import TelephoneFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.time import TimeFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.whitelist import WhiteListFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.word import WordFst
+from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     GraphFst,
     delete_extra_space,
     delete_space,

@@ -34,7 +34,7 @@ try:
     #NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
     #NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
     #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
-    NEMO_ALPHA = chr(c) for c in range (0x4e00,0x9fff) if c not in NEMO_DIGIT
+    NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if c not in NEMO_DIGIT)
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()
     NEMO_HEX = pynini.union(*string.hexdigits).optimize()
     NEMO_NON_BREAKING_SPACE = u"\u00A0"
