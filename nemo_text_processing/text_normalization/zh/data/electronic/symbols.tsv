@@ -1,20 +1,25 @@
-.	punkt
-:	doppelpunkt
--	bindestrich
-_	unterstrich
-!	ausrufezeichen
-#	raute
-$	dollar zeichen
-%	prozent zeichen
-&	und
-'	apostroph
-*	asterisk
-+	plus
-/	slash
-=	gleichheitszeichen
-?	fragezeichen
-^	zirkumflex
-{	linke klammer auf
-}	rechte klammer zu
-~	tilde
-,	komma
+.	点
+:	破折号
+-	连字号
+_	下划线
+!	感叹号
+#	星号
+￥   元
+%	百分比号
+&	和号
+'	但括号
+*	星号
++	加号
+/	斜线号
+=	等号
+?	问号
+^	抑扬符
+{	大括号
+}	右大括号
+~	波浪字符
+,	逗号
+‘   引号
+“   双引号
+’   右单引号
+”   右双引号
+。  句号
