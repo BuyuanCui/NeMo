@@ -18,7 +18,7 @@ import string
 from pathlib import Path
 from typing import Dict
 
-from nemo_text_processing.inverse_text_normalization.fr.utils import get_abs_path
+from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
 
 try:
     import pynini
@@ -34,7 +34,7 @@ try:
     #NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
     #NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
     #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
-    NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if c not in NEMO_DIGIT)
+    NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if c not in NEMO_DIGIT) #Mandarin characters
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()
     NEMO_HEX = pynini.union(*string.hexdigits).optimize()
     NEMO_NON_BREAKING_SPACE = u"\u00A0"
@@ -53,13 +53,13 @@ try:
     delete_extra_space = pynini.cross(pynini.closure(NEMO_WHITE_SPACE, 1), " ")
 
     # French frequently compounds numbers with hyphen.
-    delete_hyphen = pynutil.delete(pynini.closure("-", 0, 1))
-    insert_hyphen = pynutil.insert("-")
-    suppletive = pynini.string_file(get_abs_path("data/suppletive.tsv"))
+    #delete_hyphen = pynutil.delete(pynini.closure("-", 0, 1))
+    #insert_hyphen = pynutil.insert("-")
+    #suppletive = pynini.string_file(get_abs_path("data/suppletive.tsv"))
 
-    _s = NEMO_SIGMA + pynutil.insert("s")
-    _x = NEMO_SIGMA + pynini.string_map([("eau"), ("eu"), ("ou")]) + pynutil.insert("x")
-    _aux = NEMO_SIGMA + pynini.string_map([("al", "aux"), ("ail", "aux")])
+    #_s = NEMO_SIGMA + pynutil.insert("s")
+    #_x = NEMO_SIGMA + pynini.string_map([("eau"), ("eu"), ("ou")]) + pynutil.insert("x")
+    #_aux = NEMO_SIGMA + pynini.string_map([("al", "aux"), ("ail", "aux")])
 
     graph_plural = plurals._priority_union(
         suppletive, plurals._priority_union(_s, pynini.union(_x, _aux), NEMO_SIGMA), NEMO_SIGMA

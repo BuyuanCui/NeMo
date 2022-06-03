@@ -48,21 +48,26 @@ class CardinalFst(GraphFst):
         graph_teen = pynini.string_file(get_abs_path("data/numbers/teen.tsv"))
 
         graph_hundred = pynini.cross("百", "")
-
+        #replace hundred with empty(下に融合)
         graph_hundred_component = pynini.union(graph_digit + delete_space + graph_hundred, pynutil.insert("0"))
+        #union digit+delete_space+(replace hundred with emoty)+,add zero
         graph_hundred_component += delete_space
         graph_hundred_component += pynini.union(
             graph_teen | pynutil.insert("00"),
             (graph_ties | pynutil.insert("0")) + delete_space + (graph_digit | pynutil.insert("0")),
         )
-
+        #teen+insert zero or ties+insert zero+delete space+(gitis+insert zero) （下に融合）
         graph_hundred_component_at_least_one_none_zero_digit = graph_hundred_component @ (
             pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT - "0") + pynini.closure(NEMO_DIGIT)
         )
+    
         self.graph_hundred_component_at_least_one_none_zero_digit = (
             graph_hundred_component_at_least_one_none_zero_digit
         )
+        #Final for graph hundred
 
+        #以下は大きいナンバーのグラフ（グラフ百に基づいて）
+    
         graph_thousands = pynini.union(
             graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千"),
             pynutil.insert("000", weight=0.1),
@@ -163,6 +168,7 @@ class CardinalFst(GraphFst):
             graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千垓"),
             pynutil.insert("000", weight=0.1),
         )
+        #すべて融合
         graph = pynini.union(
             graph_thousandsextillion
             + delete_space
@@ -217,19 +223,20 @@ class CardinalFst(GraphFst):
             + graph_hundred_component,
             graph_zero,
         )
-
+        #redefine the graph just combined
         graph = graph @ pynini.union(
             pynutil.delete(pynini.closure("0")) + pynini.difference(NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT), "0"
         )
-
+        #delete all zeros+accept all except NEMO_DTGIT +delete all zeros, zero
         labels_exception = [num_to_word(x) for x in range(0, 13)]
+        #for x in range (0,13) apply function num_to_word()
         graph_exception = pynini.union(*labels_exception)
 
-        graph = (
-            pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
-            @ (NEMO_ALPHA + NEMO_SIGMA)
-            @ graph
-        )
+        #graph = (
+         #   pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
+          #  @ (NEMO_ALPHA + NEMO_SIGMA)
+           # @ graph
+        #)
 
         self.graph_no_exception = graph
 
