@@ -30,7 +30,7 @@ try:
     NEMO_CHAR = utf8.VALID_UTF8_CHAR
 
    # NEMO_DIGIT = byte.DIGIT
-    NEMO_DIGIT = pynini.string_file(get_abs_path("data/numbers/cardinal/digits.tsv"))
+    NEMO_DIGIT = pynini.string_file(get_abs_path("data/numbers/digits.tsv"))
     #NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
     #NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
     #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()

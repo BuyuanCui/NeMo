@@ -245,7 +245,7 @@ class CardinalFst(GraphFst):
         optional_minus_graph = pynini.closure(
             pynutil.insert("负: ") + pynini.cross("负", "\"-\"") + NEMO_SPACE, 0, 1
         )
-
+        #cover finals number
         final_graph = optional_minus_graph + pynutil.insert("integer: \"") + self.graph + pynutil.insert("\"")
 
         final_graph = self.add_tokens(final_graph)
