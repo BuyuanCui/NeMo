@@ -232,11 +232,11 @@ class CardinalFst(GraphFst):
         #for x in range (0,13) apply function num_to_word()
         graph_exception = pynini.union(*labels_exception)
 
-        #graph = (
-         #   pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
-          #  @ (NEMO_ALPHA + NEMO_SIGMA)
-           # @ graph
-        #)
+        graph = (
+            pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
+            @ (NEMO_ALPHA + NEMO_SIGMA)
+            @ graph
+        )
 
         self.graph_no_exception = graph
 
