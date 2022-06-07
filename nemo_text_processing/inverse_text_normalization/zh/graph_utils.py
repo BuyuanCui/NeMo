@@ -29,15 +29,18 @@ try:
 
     NEMO_CHAR = utf8.VALID_UTF8_CHAR
 
-   # NEMO_DIGIT = byte.DIGIT
+    #NEMO_DIGIT = byte.DIGIT
     #NEMO_DIGIT = pynini.string_file(get_abs_path("data/numbers/digits.tsv"))
-    NEMO_DIGIT = pynini.string_map([('一'，'1'),('二','2'),('三','3'),('四','4'),('五','5'),('六','6'),('七','7'),('八','8'),('九','9')])
-
-
+    NEMO_DIGIT = pynini.string_map([('一','1'),('二','2'),('三','3'),('四','4'),('五','5'),('六','6'),('七','7'),('八','8'),('九','9')])
     #NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
     #NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
     #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
-    NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if c not in NEMO_DIGIT) #Mandarin characters
+    
+    mandarin_digits = '一二三四五六七八九'
+    characters=''.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in mandarin_digits) #Mandarin characters
+   
+    #NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in digits) #Mandarin characters
+    NEMO_ALPHA = pynini.union(*characters).optimize()
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()
     NEMO_HEX = pynini.union(*string.hexdigits).optimize()
     NEMO_NON_BREAKING_SPACE = u"\u00A0"
@@ -64,14 +67,14 @@ try:
     #_x = NEMO_SIGMA + pynini.string_map([("eau"), ("eu"), ("ou")]) + pynutil.insert("x")
     #_aux = NEMO_SIGMA + pynini.string_map([("al", "aux"), ("ail", "aux")])
 
-    graph_plural = plurals._priority_union(
-        suppletive, plurals._priority_union(_s, pynini.union(_x, _aux), NEMO_SIGMA), NEMO_SIGMA
-    ).optimize()
+   # graph_plural = plurals._priority_union(
+    #    plurals._priority_union(_s, pynini.union(_x, _aux), NEMO_SIGMA), NEMO_SIGMA
+    #).optimize()
 
-    SINGULAR_TO_PLURAL = graph_plural
-    PLURAL_TO_SINGULAR = pynini.invert(graph_plural)
-    TO_LOWER = pynini.union(*[pynini.cross(x, y) for x, y in zip(string.ascii_uppercase, string.ascii_lowercase)])
-    TO_UPPER = pynini.invert(TO_LOWER)
+    #SINGULAR_TO_PLURAL = graph_plural
+    #PLURAL_TO_SINGULAR = pynini.invert(graph_plural)
+    #TO_LOWER = pynini.union(*[pynini.cross(x, y) for x, y in zip(string.ascii_uppercase, string.ascii_lowercase)])
+    #TO_UPPER = pynini.invert(TO_LOWER)
 
     PYNINI_AVAILABLE = True
 except (ModuleNotFoundError, ImportError):
@@ -131,29 +134,6 @@ def generator_main(file_name: str, graphs: Dict[str, pynini.FstLike]):
     exporter.close()
     print(f'Created {file_name}')
 
-
-def get_plurals(fst):
-    """
-    Given singular returns plurals
-
-    Args:
-        fst: Fst
-
-    Returns plurals to given singular forms
-    """
-    return SINGULAR_TO_PLURAL @ fst
-
-
-def get_singulars(fst):
-    """
-    Given plural returns singulars
-
-    Args:
-        fst: Fst
-
-    Returns singulars to given plural forms
-    """
-    return PLURAL_TO_SINGULAR @ fst
 
 
 def convert_space(fst) -> 'pynini.FstLike':
