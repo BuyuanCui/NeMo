@@ -22,9 +22,9 @@ from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     convert_space,
     delete_extra_space,
     delete_space,
-    get_singulars,
     insert_space,
 )
+#get_singulars,
 
 try:
     import pynini

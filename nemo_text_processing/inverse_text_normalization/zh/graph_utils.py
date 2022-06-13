@@ -37,8 +37,7 @@ try:
     #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
     
     mandarin_digits = '一二三四五六七八九'
-    characters=' '.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in mandarin_digits) #Mandarin characters
-   
+    characters = ' '.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in mandarin_digits) #Mandarin characters
     #NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in digits) #Mandarin characters
     NEMO_ALPHA = pynini.union(*characters).optimize()
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()

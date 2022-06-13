@@ -19,9 +19,9 @@ from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     GraphFst,
     convert_space,
     delete_extra_space,
-    delete_space,
-    get_singulars,
-)
+    delete_space,)
+    #get_singulars,
+
 
 try:
     import pynini
