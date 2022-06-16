@@ -52,6 +52,7 @@ def _get_ties_graph():
     Transducer for 20-99 e.g
     twenty three -> 23
     """
+    #graph = ties_graph + (delete_space + graph_digit | pynutil.insert("0"))
     graph = ties_graph + (delete_space + graph_digit | pynutil.insert("0"))
     return graph
 
@@ -61,12 +62,15 @@ def _get_range_graph():
     Transducer for decades (1**0s, 2**0s), centuries (2*00s, 1*00s), millennia (2000s)
     """
     graph_ties = _get_ties_graph()
-    graph = (graph_ties | graph_teen) + delete_space + pynini.cross("百", "00s")
-    graph |= pynini.cross("二", "2") + delete_space + pynini.cross("千", "000s")
+    #graph = (graph_ties | graph_teen) + delete_space + pynini.cross("百", "00s")
+    #graph |= pynini.cross("二", "2") + delete_space + pynini.cross("千", "000s")
+    graph = (graph_ties | graph_teen) + pynini.cross("百", "00s")
+    graph |= pynini.cross("二", "2") + pynini.cross("千", "000s")
+    
     graph |= (
         (graph_ties | graph_teen)
-        + delete_space
-        + (pynini.closure(NEMO_ALPHA, 1) + (pynini.cross("ies", "y") | pynutil.delete("s")))
+        #+ delete_space
+        #+ (pynini.closure(NEMO_ALPHA, 1) + (pynini.cross("ies", "y") | pynutil.delete("s")))
         @ (graph_ties | pynini.cross("十", "10"))
         + pynutil.insert("s")
     )

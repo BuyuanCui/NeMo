@@ -22,6 +22,7 @@ from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     NEMO_SPACE,
     GraphFst,
     delete_space,
+    Mandarin_Digit,
 )
 
 try:
@@ -49,177 +50,188 @@ class CardinalFst(GraphFst):
 
         graph_hundred = pynini.cross("百", "")
         #replace hundred with empty(下に融合)
-        graph_hundred_component = pynini.union(graph_digit + delete_space + graph_hundred, pynutil.insert("0"))
+        #graph_hundred_component = pynini.union(graph_digit + delete_space + graph_hundred, pynutil.insert("0"))
+        graph_hundred_component = pynini.union(graph_digit + graph_hundred, pynutil.insert("00"))
+        
         #union digit+delete_space+(replace hundred with emoty)+,add zero
-        graph_hundred_component += delete_space
+        #graph_hundred_component += delete_space
+        #graph_hundred_component += pynini.union(
+        #    graph_teen | pynutil.insert("00"),
+        #    (graph_ties | pynutil.insert("0")) + delete_space + (graph_digit | pynutil.insert("0")),
+        #)
         graph_hundred_component += pynini.union(
-            graph_teen | pynutil.insert("00"),
-            (graph_ties | pynutil.insert("0")) + delete_space + (graph_digit | pynutil.insert("0")),
+            graph_teen | pynutil.insert("0"),
+            (graph_ties | pynutil.insert("0")) + (graph_digit | pynutil.insert("00")),
         )
         #teen+insert zero or ties+insert zero+delete space+(gitis+insert zero) （下に融合）
+        #graph_hundred_component_at_least_one_none_zero_digit = graph_hundred_component @ (
+        #    pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT - "0") + pynini.closure(NEMO_DIGIT)
+        #)
         graph_hundred_component_at_least_one_none_zero_digit = graph_hundred_component @ (
-            pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT - "0") + pynini.closure(NEMO_DIGIT)
+            pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT, "0") + (NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
         )
-    
+
         self.graph_hundred_component_at_least_one_none_zero_digit = (
             graph_hundred_component_at_least_one_none_zero_digit
         )
+        graph_tens_of_hundreds_component = pynini.union((graph_ties + pynutil.delete("万"), pynutil.insert("000")）,(graph_teens + pynutil.delete("万") + pynutil.innsert("000")),)
         #Final for graph hundred
 
         #以下は大きいナンバーのグラフ（グラフ百に基づいて）
-    
+
+        #以下已移除delete_space     
         graph_thousands = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tenthousands = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("万"),
-            pynutil.insert("000", weight=0.1),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("万"),
+            pynutil.insert("0000", weight=0.1),
         )
         graph_hundredthousands = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十万"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十万"),
             pynutil.insert("000", weight=0.1),
         )
         graph_million = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百万"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百万"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tenmillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千万"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千万"),
             pynutil.insert("000", weight=0.1),
         )
         graph_hundredmillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("亿"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("亿"),
             pynutil.insert("000", weight=0.1),
         )
         graph_billion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十亿"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十亿"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tenbillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百亿"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百亿"),
             pynutil.insert("000", weight=0.1),
         )
         graph_hundredbillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千亿"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千亿"),
             pynutil.insert("000", weight=0.1),
         )
         graph_trillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("兆"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("兆"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tentrillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十兆"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十兆"),
             pynutil.insert("000", weight=0.1),
         )
         graph_hundredtrillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百兆"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百兆"),
             pynutil.insert("000", weight=0.1),
         )
         graph_quadrillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千兆"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千兆"),
             pynutil.insert("000", weight=0.1),
         )
         graph_giga = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("京"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("京"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tengiga = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十京"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十京"),
             pynutil.insert("000", weight=0.1),
         )
         graph_quintillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百京"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百京"),
             pynutil.insert("000", weight=0.1),
         )
         graph_thousandgiga = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千京"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千京"),
             pynutil.insert("000", weight=0.1),
         )
         graph_gai = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("垓"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("垓"),
             pynutil.insert("000", weight=0.1),
         )
         graph_sextillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十垓"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十垓"),
             pynutil.insert("000", weight=0.1),
         )
         graph_hundredgai = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百垓"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百垓"),
             pynutil.insert("000", weight=0.1),
         )
         graph_thousandgai = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千垓"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千垓"),
             pynutil.insert("000", weight=0.1),
         )
         graph_septillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("秭"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("秭"),
             pynutil.insert("000", weight=0.1),
         )
         graph_tensextillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("十秭"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("十秭"),
             pynutil.insert("000", weight=0.1),
         )
         graph_hundredsextillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("百秭"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("百秭"),
             pynutil.insert("000", weight=0.1),
         )
         graph_thousandsextillion = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + delete_space + pynutil.delete("千垓"),
+            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千垓"),
             pynutil.insert("000", weight=0.1),
         )
         #すべて融合
         graph = pynini.union(
             graph_thousandsextillion
-            + delete_space
+            #+ delete_space
             + graph_hundredsextillion
-            + delete_space
+            #+ delete_space
             + graph_tensextillion
-            + delete_space
+            #+ delete_space
             + graph_septillion
-            + delete_space
+            #+ delete_space
             + graph_thousandgai
-            + delete_space
+            #+ delete_space
             + graph_hundredgai
-            + delete_space
+            #+ delete_space
             + graph_sextillion
-            + delete_space
+            #+ delete_space
             + graph_gai
-            + delete_space
+            #+ delete_space
             + graph_thousandgiga
-            + delete_space
+            #+ delete_space
             + graph_quintillion
-            + delete_space
+            #+ delete_space
             + graph_tengiga
-            + delete_space
+            #+ delete_space
             + graph_giga
-            + delete_space
+            #+ delete_space
             + graph_quadrillion
-            + delete_space
+            #+ delete_space
             + graph_hundredtrillion
-            + delete_space
+            #+ delete_space
             + graph_tentrillion
-            + delete_space
+            #+ delete_space
             + graph_trillion
-            + delete_space
+            #+ delete_space
             + graph_hundredbillion
-            + delete_space
+            #+ delete_space
             + graph_tenbillion
-            + delete_space
+            #+ delete_space
             + graph_billion
-            + delete_space
+            #+ delete_space
             + graph_hundredmillion
-            + delete_space
+            #+ delete_space
             + graph_tenmillion
-            + delete_space
+            #+ delete_space
             + graph_million
-            + delete_space
+            #+ delete_space
             + graph_hundredthousands
-            + delete_space
+            #+ delete_space
             + graph_tenthousands
-            + delete_space
+            #+ delete_space
             + graph_thousands
-            + delete_space
+            #+ delete_space
             + graph_hundred_component,
             graph_zero,
         )
@@ -232,12 +244,12 @@ class CardinalFst(GraphFst):
         #for x in range (0,13) apply function num_to_word()
         graph_exception = pynini.union(*labels_exception)
 
-        graph = (
-            pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
-            @ (NEMO_ALPHA + NEMO_SIGMA)
-            @ graph
-        )
-
+        #graph = (
+        #    pynini.cdrewrite(pynutil.delete("and"), NEMO_SPACE, NEMO_SPACE, NEMO_SIGMA)
+        #    @ (NEMO_ALPHA + NEMO_SIGMA)
+        #    @ graph
+        #)
+        
         self.graph_no_exception = graph
 
         self.graph = (pynini.project(graph, "input") - graph_exception.arcsort()) @ graph
