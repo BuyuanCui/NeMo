@@ -47,13 +47,14 @@ class CardinalFst(GraphFst):
         graph_digit = pynini.string_file(get_abs_path("data/numbers/digit.tsv"))
         graph_ties = pynini.string_file(get_abs_path("data/numbers/ties.tsv"))
         graph_teen = pynini.string_file(get_abs_path("data/numbers/teen.tsv"))
-
+        #below：10-99的数列
+        graph_tens_component = (graph_ties + graph_digit) | pynutil.insert("0") 
+        graph_tens_component = pynini.union(graph_tens_component, graph_teen)
+        #below: hundreds
         graph_hundred = pynini.cross("百", "")
-        #replace hundred with empty(下に融合)
         #graph_hundred_component = pynini.union(graph_digit + delete_space + graph_hundred, pynutil.insert("0"))
         graph_hundred_component = pynini.union(graph_digit + graph_hundred, pynutil.insert("00"))
         
-        #union digit+delete_space+(replace hundred with emoty)+,add zero
         #graph_hundred_component += delete_space
         #graph_hundred_component += pynini.union(
         #    graph_teen | pynutil.insert("00"),
@@ -68,22 +69,39 @@ class CardinalFst(GraphFst):
         #    pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT - "0") + pynini.closure(NEMO_DIGIT)
         #)
         graph_hundred_component_at_least_one_none_zero_digit = graph_hundred_component @ (
-            pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT, "0") + (NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
+            pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
         )
 
-        self.graph_hundred_component_at_least_one_none_zero_digit = (
-            graph_hundred_component_at_least_one_none_zero_digit
+        #self.graph_hundred_component_at_least_one_none_zero_digit = (
+        #    graph_hundred_component_at_least_one_none_zero_digit
         )
-        graph_tens_of_hundreds_component = pynini.union((graph_ties + pynutil.delete("万"), pynutil.insert("000")）,(graph_teens + pynutil.delete("万") + pynutil.innsert("000")),)
+        graph_thousands = pynini.cross("千","")
+        graph_thousands_component = pynini.union(graph_digit + graph_thousands, pynutil.insert("000"))
+        graph_thousands_component += pynini.union(
+            graph_teen | pyntil.insert("000"), (graph_ties | pynutil.insert("000")) + (graph_digit | pynutil.insert ("000")),
+        )
+
+        # tens as 10-99
+        graph_tens_of_hundreds = pynini.cross("万","")
+        graph_tens_of_hundreds_component = pynini.union(graph_digit + graph_tens_of_hundreds, pynutil.insert("0000"))
+        graph_tens_of_hundreds_component += pynini.union(graph_teen | pynutil.insert ("000"), (graph_ties | pynutil.insert("000"), graph_digit | pynutil.insert("000")),
+        )
+        
+        graph_tens_of_hundreds_component_at_least_one_none_zero_digit = graph_tens_of_hundreds_component @(
+            pynini.closure(NEMO_DIGIT) + (NEMO_DIGIT, "0") + (NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
+        )
+        self.graph_tens_of_hundreds_component_at_least_one_none_zero_digit = (
+            graph_tens_of_hundreds_component_at_least_one_none_zero_digit
+        )
         #Final for graph hundred
 
         #以下は大きいナンバーのグラフ（グラフ百に基づいて）
 
         #以下已移除delete_space     
-        graph_thousands = pynini.union(
-            graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千"),
-            pynutil.insert("000", weight=0.1),
-        )
+        #graph_thousands = pynini.union(
+        #    graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("千"),
+        #    pynutil.insert("000", weight=0.1),
+        #)
         graph_tenthousands = pynini.union(
             graph_hundred_component_at_least_one_none_zero_digit + pynutil.delete("万"),
             pynutil.insert("0000", weight=0.1),
