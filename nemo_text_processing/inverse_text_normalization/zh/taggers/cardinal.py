@@ -33,29 +33,6 @@ except (ModuleNotFoundError, ImportError):
     PYNINI_AVAILABLE = False
 
 
-import pynini
-import nemo_text_processing
-from pynini.lib import pynutil
-
-from nemo_text_processing.text_normalization.en.graph_utils import GraphFst, NEMO_DIGIT, delete_space, NEMO_SIGMA, NEMO_NOT_QUOTE, delete_extra_space, NEMO_NON_BREAKING_SPACE
-from nemo_text_processing.text_normalization.normalize import Normalizer
-
-from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.decimal import DecimalFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.money import MoneyFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.ordinal import OrdinalFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.punctuation import PunctuationFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.time import TimeFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.whitelist import WhiteListFst
-from nemo_text_processing.inverse_text_normalization.zh.taggers.word import WordFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.cardinal import CardinalFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.decimal import DecimalFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.money import MoneyFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.ordinal import OrdinalFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.time import TimeFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.whitelist import WhiteListFst
-from nemo_text_processing.inverse_text_normalization.zh.verbalizers.word import WordFst
-
 def apply_fst(text,fst):#applies this function for test purposes: apply_fst("the text",the fst_you_built)
     try:
         print(pynini.shortestpath(text @fst).string())
