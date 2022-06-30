@@ -31,15 +31,15 @@ try:
 
     NEMO_DIGIT = byte.DIGIT
     #NEMO_DIGIT = pynini.string_file(get_abs_path("data/numbers/digits.tsv"))
-    Mandarin_DIGIT = pynini.string_map([('零','0'),('一','1'),('二','2'),('三','3'),('四','4'),('五','5'),('六','6'),('七','7'),('八','8'),('九','9')])
-    #NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
-    #NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
-    #NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
+    #Mandarin_DIGIT = pynini.string_map([('零','0'),('一','1'),('二','2'),('三','3'),('四','4'),('五','5'),('六','6'),('七','7'),('八','8'),('九','9')])
+    NEMO_LOWER = pynini.union(*string.ascii_lowercase).optimize()
+    NEMO_UPPER = pynini.union(*string.ascii_uppercase).optimize()
+    NEMO_ALPHA = pynini.union(NEMO_LOWER, NEMO_UPPER).optimize()
     
-    mandarin_digits = '一二三四五六七八九'
-    characters = ' '.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in mandarin_digits) #Mandarin characters
+    #mandarin_digits = '一二三四五六七八九'
+    #characters = ' '.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in mandarin_digits) #Mandarin characters
     #NEMO_ALPHA = ''.join(chr(c) for c in range (0x4e00,0x9fff) if chr(c) not in digits) #Mandarin characters
-    NEMO_ALPHA = pynini.union(*characters).optimize()
+    #NEMO_ALPHA = pynini.union(*characters).optimize()
     NEMO_ALNUM = pynini.union(NEMO_DIGIT, NEMO_ALPHA).optimize()
     NEMO_HEX = pynini.union(*string.hexdigits).optimize()
     NEMO_NON_BREAKING_SPACE = u"\u00A0"

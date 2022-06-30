@@ -13,38 +13,59 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
-from nemo_text_processing.text_normalization.en.graph_utils import NEMO_CHAR, GraphFst
 
-try:
-    import pynini
-    from pynini.lib import pynutil
+#%load_ext autoreload
+#%autoreload 2
 
-    PYNINI_AVAILABLE = True
-except (ImportError, ModuleNotFoundError):
-    PYNINI_AVAILABLE = False
+import pynini
+import nemo_text_processing
+from pynini.lib import pynutil
+
+def apply_fst(text,fst):#applies this function for test purposes: apply_fst("the text",the fst_you_built)
+    try:
+        print(pynini.shortestpath(text @fst).string())
+    except:
+        print(f"Error: No valid output with given input: ' {text}'")
+
+from nemo_text_processing.text_normalization.en.graph_utils import GraphFst, NEMO_DIGIT, delete_space, NEMO_SIGMA, NEMO_NOT_QUOTE, delete_extra_space, NEMO_NON_BREAKING_SPACE
+from nemo_text_processing.text_normalization.normalize import Normalizer
+
+from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.decimal import DecimalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.money import MoneyFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.ordinal import OrdinalFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.punctuation import PunctuationFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.time import TimeFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.whitelist import WhiteListFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.word import WordFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.cardinal import CardinalFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.decimal import DecimalFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.money import MoneyFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.ordinal import OrdinalFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.time import TimeFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.whitelist import WhiteListFst
+from nemo_text_processing.inverse_text_normalization.zh.verbalizers.word import WordFst
+from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
 
 
 class OrdinalFst(GraphFst):
-    """
-    Finite state transducer for classifying ordinal
-        e.g. thirteenth -> ordinal { integer: "13" }
-
-    Args:
-        cardinal: CardinalFst
-    """
-
     def __init__(self, cardinal: GraphFst):
         super().__init__(name="ordinal", kind="classify")
+        graph_cardinals = CardinalFst().just_cardinals
+        strip_morpheme = pynutil.delete("第") 
+        graph_strip_morpheme = strip_morpheme + NEMO_SIGMA
+        strip_ordinals = graph_strip_morpheme @ graph_cardinals
+        graph_ordinals= pynutil.insert("第") + strip_ordinals
+        graph_ordinal_final = pynutil.insert("integer: \"") + graph_ordinals + pynutil.insert("\"")
+        graph_ordinal_final = self.add_tokens(graph_ordinal_final)
+        self.fst = graph_ordinal_final.optimize()
 
-        cardinal_graph = cardinal.graph_no_exception
-        graph_digit = pynini.string_file(get_abs_path("data/ordinals/digit.tsv"))
-        graph_teens = pynini.string_file(get_abs_path("data/ordinals/teen.tsv"))
-        graph = pynini.closure(NEMO_CHAR) + pynini.union(
-            graph_digit, graph_teens, pynini.cross("tieth", "ty"), pynini.cross("th", "")
-        )
+#cardinal = CardinalFst()
+#ordinal = OrdinalFst(cardinal).fst
+#exmaple1 = "第五十"# only correct; expected output= 第50
+#exmaple2 = "五十"
+#example_1 = "五十第"
+#apply_fst(exmaple1, ordinal)
+#apply_fst(exmaple2, ordinal)
+#apply_fst(example_1,ordinal)
 
-        self.graph = graph @ cardinal_graph
-        final_graph = pynutil.insert("integer: \"") + self.graph + pynutil.insert("\"")
-        final_graph = self.add_tokens(final_graph)
-        self.fst = final_graph.optimize()
