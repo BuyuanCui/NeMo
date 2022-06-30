@@ -121,16 +121,15 @@ class CardinalFst(GraphFst):
         clean_cardinal = clean_cardinal | "0" #Allow the existence of a "0"
         graph =  graph @ clean_cardinal
         
+        #new graph
+        self.just_cardinals = graph
+
         #Token insertion
         optional_minus_graph = pynini.closure(pynutil.insert("negative: ") + pynini.cross("负", "\"-\"") + " ", 0, 1) 
         final_graph = optional_minus_graph + pynutil.insert("integer: \"") + graph + pynutil.insert("\"")
         final_graph = self.add_tokens(final_graph)
         self.fst = final_graph
         
-
-#cardinal = CardinalFst().fst
-#exmaple = "一亿"
-#apply_fst(exmaple,cardinal)
 
 
 
