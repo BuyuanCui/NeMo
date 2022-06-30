@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import NEMO_ALPHA, NEMO_DIGIT, GraphFst, insert_space
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import NEMO_ALPHA, NEMO_DIGIT, GraphFst, insert_space
 
 try:
     import pynini
@@ -44,7 +44,7 @@ class ElectronicFst(GraphFst):
         symbols = pynini.string_file(get_abs_path("data/electronic/symbols.tsv")).invert()
 
         accepted_username = alpha_num | symbols
-        process_dot = pynini.cross("点", ".")
+        process_dot = pynini.cross("dot", ".")
         username = (alpha_num + pynini.closure(delete_extra_space + accepted_username)) | pynutil.add_weight(
             pynini.closure(NEMO_ALPHA, 1), weight=0.0001
         )

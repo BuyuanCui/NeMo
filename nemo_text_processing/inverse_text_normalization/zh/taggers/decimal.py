@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_DIGIT,
     GraphFst,
     delete_extra_space,
@@ -43,7 +43,7 @@ def get_quantity(decimal: 'pynini.FstLike', cardinal_up_to_hundred: 'pynini.FstL
     numbers = cardinal_up_to_hundred @ (
         pynutil.delete(pynini.closure("0")) + pynini.difference(NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
     )
-    suffix = pynini.union("万", "十万", "百万", "千万", "亿", "十亿", "百亿","千亿","兆","十兆","百兆","千兆","京","十京","百京","千京","垓","十垓","百垓","千垓")
+    suffix = pynini.union("million", "billion", "trillion", "quadrillion", "quintillion", "sextillion")
     res = (
         pynutil.insert("integer_part: \"")
         + numbers
@@ -80,7 +80,7 @@ class DecimalFst(GraphFst):
         point = pynutil.delete("point")
 
         optional_graph_negative = pynini.closure(
-            pynutil.insert("负: ") + pynini.cross("负", "\"true\"") + delete_extra_space, 0, 1
+            pynutil.insert("negative: ") + pynini.cross("minus", "\"true\"") + delete_extra_space, 0, 1
         )
 
         graph_fractional = pynutil.insert("fractional_part: \"") + graph_decimal + pynutil.insert("\"")

@@ -14,9 +14,9 @@
 # limitations under the License.
 
 
-from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path, num_to_word
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.taggers.cardinal import CardinalFst
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path, num_to_word
+from nemo_text_processing.text_normalization.en.graph_utils import (
     GraphFst,
     convert_space,
     delete_extra_space,
@@ -63,8 +63,8 @@ class TimeFst(GraphFst):
 
         graph_minute_single = pynini.union(*labels_minute_single) @ cardinal
         graph_minute_double = pynini.union(*labels_minute_double) @ cardinal
-        graph_minute_verbose = pynini.cross("半", "30") | pynini.cross("一刻", "15")
-        oclock = pynini.cross(pynini.union("o' clock", "o clock", "o'clock", "oclock", "点"), "")
+        graph_minute_verbose = pynini.cross("half", "30") | pynini.cross("quarter", "15")
+        oclock = pynini.cross(pynini.union("o' clock", "o clock", "o'clock", "oclock"), "")
 
         final_graph_hour = pynutil.insert("hours: \"") + graph_hour + pynutil.insert("\"")
         graph_minute = (
@@ -103,7 +103,7 @@ class TimeFst(GraphFst):
 
         graph_quarter_time = (
             pynutil.insert("minutes: \"")
-            + pynini.cross("三刻", "45")
+            + pynini.cross("quarter", "45")
             + pynutil.insert("\"")
             + delete_space
             + pynutil.delete(pynini.union("to", "till"))

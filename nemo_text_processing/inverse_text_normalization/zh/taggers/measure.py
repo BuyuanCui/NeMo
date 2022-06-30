@@ -13,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_SIGMA,
     GraphFst,
     convert_space,
     delete_extra_space,
-    delete_space,)
-    #get_singulars,
-
+    delete_space,
+    get_singulars,
+)
 
 try:
     import pynini
@@ -52,12 +52,12 @@ class MeasureFst(GraphFst):
         graph_unit_plural = get_singulars(graph_unit_singular)  # plural -> abbr
 
         optional_graph_negative = pynini.closure(
-            pynutil.insert("负: ") + pynini.cross("负", "\"true\"") + delete_extra_space, 0, 1
+            pynutil.insert("negative: ") + pynini.cross("minus", "\"true\"") + delete_extra_space, 0, 1
         )
 
         unit_singular = convert_space(graph_unit_singular)
         unit_plural = convert_space(graph_unit_plural)
-        unit_misc = pynutil.insert("/") + pynutil.delete("每") + delete_space + convert_space(graph_unit_singular)
+        unit_misc = pynutil.insert("/") + pynutil.delete("per") + delete_space + convert_space(graph_unit_singular)
 
         unit_singular = (
             pynutil.insert("units: \"")

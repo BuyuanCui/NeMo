@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import GraphFst
+from nemo_text_processing.text_normalization.en.graph_utils import GraphFst
 
 try:
     import pynini
@@ -33,7 +33,7 @@ class PunctuationFst(GraphFst):
     def __init__(self):
         super().__init__(name="punctuation", kind="classify")
 
-        s = "!#$%&\'()*+,-./:;<=>?@^_`{|}~，。"
+        s = "!#$%&\'()*+,-./:;<=>?@^_`{|}~"
         punct = pynini.union(*s)
 
         graph = pynutil.insert("name: \"") + punct + pynutil.insert("\"")

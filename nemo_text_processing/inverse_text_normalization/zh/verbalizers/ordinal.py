@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import NEMO_NOT_QUOTE, NEMO_SIGMA, GraphFst, delete_space
+from nemo_text_processing.text_normalization.en.graph_utils import NEMO_NOT_QUOTE, NEMO_SIGMA, GraphFst, delete_space
 
 try:
     import pynini
@@ -39,12 +39,12 @@ class OrdinalFst(GraphFst):
             + pynini.closure(NEMO_NOT_QUOTE, 1)
             + pynutil.delete("\"")
         )
-        convert_eleven = pynini.cross("11", "第十一")
-        convert_twelve = pynini.cross("12", "第十二")
-        convert_thirteen = pynini.cross("13", "第十三")
-        convert_one = pynini.cross("1", "第一")
-        convert_two = pynini.cross("2", "第二")
-        convert_three = pynini.cross("3", "第三")
+        convert_eleven = pynini.cross("11", "11th")
+        convert_twelve = pynini.cross("12", "12th")
+        convert_thirteen = pynini.cross("13", "13th")
+        convert_one = pynini.cross("1", "1st")
+        convert_two = pynini.cross("2", "2nd")
+        convert_three = pynini.cross("3", "3rd")
         convert_rest = pynutil.insert("th", weight=0.01)
 
         suffix = pynini.cdrewrite(

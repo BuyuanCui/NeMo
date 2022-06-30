@@ -1,109 +1,109 @@
-f	华氏度
-c	摄氏度
-km	千米
-m	米
-cm	厘米
-mm	毫米
-ha	公顷
-mi	英里
-m²	平方米
-km²	平方千米
-ft	英尺
-%	百分比
-hz	赫兹
-kw	千瓦
-hp	马力
-mg	毫克
-kg	千克
-ghz	千兆赫
-khz	千赫
-mhz	兆赫
-v	伏特
-h	小时
-mc	兆库伦
-s	秒
-nm	纳米
-rpm	转每分
-min	分
-mA	毫安
-%	百分比
-kwh	千瓦时
-m³	立方米
-mph	英里每小时
-tw	太拉哇
-mv	毫伏
-mw	兆瓦
-μm	微米
-"	英寸
-tb	太字节
+f	fahrenheit
+c	celsius
+km	kilometer
+m	meter
+cm	centimeter
+mm	millimeter
+ha	hectare
+mi	mile
+m²	square meter
+km²	square kilometer
+ft	foot
+%	percent
+hz	hertz
+kw	kilowatt
+hp	horsepower
+mg	milligram
+kg	kilogram
+ghz	gigahertz
+khz	kilohertz
+mhz	megahertz
+v	volt
+h	hour
+mc	mega coulomb
+s	second
+nm	nanometer
+rpm	revolution per minute
+min	minute
+mA	milli ampere
+%	per cent
+kwh	kilo watt hour
+m³	cubic meter
+mph	mile per hour
+tw	tera watt
+mv	milli volt
+mw	megawatt
+μm	micrometer
+"	inch
+tb	terabyte
 cc	c c
-g	克
-da	道尔顿
-atm	标准大气压
-ω	欧姆
-db	分贝
-ps	拍秒
-oz	盎司
-hl	公石
-μg	微克
-pg	拍克
-gb	千兆字节
-kb	千字节
-ev	电子伏特
-mb	兆字节
-kb	千字节
-kbps	千比特每秒
-mbps	兆每秒
-st	英石
-kl	千升
-tj	太焦耳
-kv	千瓦
-mv	兆伏
-kn	千牛顿
-mm	兆米
-au	天文单位
-yd	码
-rad	弧度
-lm	流明
-hs	百秒
-mol	摩尔
-gpa	吉帕斯卡
-ml	毫升
-gw	千兆瓦
-ma	兆安
-kt	节
-kgf	千克力
-ng	纳克
-ns	纳秒
-ms	兆西门子
-bar	巴
-gl	千兆升
-μs	微妙
-da	分 安培
-pa	帕斯卡
-ds	分秒
-ms	毫秒
-dm	分米
-dm³	立方分米
-amu	原子质量单位
-mb	兆比特
-mf	兆法
-bq	贝克
-pb	拍字节
-mm²	立方毫米
-cm²	立方厘米
-sq mi	平方英里
-sq ft	平方英尺
-kpa	千帕
-cd	坎
-tl	太升
-ms	兆秒
+g	gram
+da	dalton
+atm	atmosphere
+ω	ohm
+db	decibel
+ps	peta second
+oz	ounce
+hl	hecto liter
+μg	microgram
+pg	petagram
+gb	gigabyte
+kb	kilobit
+ev	electron volt
+mb	megabyte
+kb	kilobyte
+kbps	kilobit per second
+mbps	megabit per second
+st	stone
+kl	kilo liter
+tj	tera joule
+kv	kilo volt
+mv	mega volt
+kn	kilonewton
+mm	megameter
+au	astronomical unit
+yd	yard
+rad	radian
+lm	lumen
+hs	hecto second
+mol	mole
+gpa	giga pascal
+ml	milliliter
+gw	gigawatt
+ma	mega ampere
+kt	knot
+kgf	kilogram force
+ng	nano gram
+ns	nanosecond
+ms	mega siemens
+bar	bar
+gl	giga liter
+μs	microsecond
+da	deci ampere
+pa	pascal
+ds	deci second
+ms	milli second
+dm	deci meter
+dm³	cubic deci meter
+amu	atomic mass unit
+mb	megabit
+mf	mega farad
+bq	becquerel
+pb	petabit
+mm²	square millimeter
+cm²	square centimeter
+sq mi	square mile
+sq ft	square foot
+kpa	kilopascal
+cd	candela
+tl	tera liter
+ms	mega second
 mpa	megapascal
-pm	拍米
-pb	拍字节
-gwh	吉瓦时
-kcal	千卡
-gy	戈
-sv	希沃特
-cwt	英担
+pm	peta meter
+pb	peta byte
+gwh	giga watt hour
+kcal	kilo calory
+gy	gray
+sv	sievert
+cwt	hundredweight
 cc	c c

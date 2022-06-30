@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_CHAR,
     NEMO_DIGIT,
     GraphFst,
@@ -42,14 +42,14 @@ class TimeFst(GraphFst):
         super().__init__(name="time", kind="verbalize")
         add_leading_zero_to_double_digit = (NEMO_DIGIT + NEMO_DIGIT) | (pynutil.insert("0") + NEMO_DIGIT)
         hour = (
-            pynutil.delete("小时:")
+            pynutil.delete("hours:")
             + delete_space
             + pynutil.delete("\"")
             + pynini.closure(NEMO_DIGIT, 1)
             + pynutil.delete("\"")
         )
         minute = (
-            pynutil.delete("分:")
+            pynutil.delete("minutes:")
             + delete_space
             + pynutil.delete("\"")
             + pynini.closure(NEMO_DIGIT, 1)

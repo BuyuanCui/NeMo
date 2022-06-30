@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_DIGIT,
     NEMO_NOT_SPACE,
     NEMO_SIGMA,
@@ -22,9 +22,9 @@ from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     convert_space,
     delete_extra_space,
     delete_space,
+    get_singulars,
     insert_space,
 )
-#get_singulars,
 
 try:
     import pynini
@@ -53,7 +53,7 @@ class MoneyFst(GraphFst):
         # add support for missing hundred (only for 3 digit numbers)
         # "one fifty" -> "one hundred fifty"
         with_hundred = pynini.compose(
-            pynini.closure(NEMO_NOT_SPACE) + pynini.accep(" ") + pynutil.insert("百 ") + NEMO_SIGMA,
+            pynini.closure(NEMO_NOT_SPACE) + pynini.accep(" ") + pynutil.insert("hundred ") + NEMO_SIGMA,
             pynini.compose(cardinal_graph, NEMO_DIGIT ** 3),
         )
         cardinal_graph |= with_hundred
@@ -73,8 +73,8 @@ class MoneyFst(GraphFst):
             + pynini.union(
                 pynutil.add_weight(((NEMO_SIGMA - "one") @ cardinal_graph), -0.7) @ add_leading_zero_to_double_digit
                 + delete_space
-                + pynutil.delete("分"),
-                pynini.cross("one", "01") + delete_space + pynutil.delete("分"),
+                + pynutil.delete("cents"),
+                pynini.cross("one", "01") + delete_space + pynutil.delete("cent"),
             )
             + pynutil.insert("\"")
         )
@@ -114,7 +114,7 @@ class MoneyFst(GraphFst):
             + (optional_cents_standalone | optional_cents_suffix)
         )
         graph_decimal = graph_decimal_final + delete_extra_space + graph_unit_plural
-        graph_decimal |= pynutil.insert("currency: \"￥\" integer_part: \"0\" ") + cents_standalone
+        graph_decimal |= pynutil.insert("currency: \"$\" integer_part: \"0\" ") + cents_standalone
         final_graph = graph_integer | graph_decimal
 
         final_graph = self.add_tokens(final_graph)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_NOT_QUOTE,
     GraphFst,
     delete_extra_space,
@@ -38,21 +38,21 @@ class DateFst(GraphFst):
     def __init__(self):
         super().__init__(name="date", kind="verbalize")
         month = (
-            pynutil.delete("月:")
+            pynutil.delete("month:")
             + delete_space
             + pynutil.delete("\"")
             + pynini.closure(NEMO_NOT_QUOTE, 1)
             + pynutil.delete("\"")
         )
         day = (
-            pynutil.delete("日:")
+            pynutil.delete("day:")
             + delete_space
             + pynutil.delete("\"")
             + pynini.closure(NEMO_NOT_QUOTE, 1)
             + pynutil.delete("\"")
         )
         year = (
-            pynutil.delete("年:")
+            pynutil.delete("year:")
             + delete_space
             + pynutil.delete("\"")
             + pynini.closure(NEMO_NOT_QUOTE, 1)

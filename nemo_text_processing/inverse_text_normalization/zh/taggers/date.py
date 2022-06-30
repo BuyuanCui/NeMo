@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_ALPHA,
     NEMO_DIGIT,
     GraphFst,
@@ -52,7 +52,6 @@ def _get_ties_graph():
     Transducer for 20-99 e.g
     twenty three -> 23
     """
-    #graph = ties_graph + (delete_space + graph_digit | pynutil.insert("0"))
     graph = ties_graph + (delete_space + graph_digit | pynutil.insert("0"))
     return graph
 
@@ -62,16 +61,13 @@ def _get_range_graph():
     Transducer for decades (1**0s, 2**0s), centuries (2*00s, 1*00s), millennia (2000s)
     """
     graph_ties = _get_ties_graph()
-    #graph = (graph_ties | graph_teen) + delete_space + pynini.cross("百", "00s")
-    #graph |= pynini.cross("二", "2") + delete_space + pynini.cross("千", "000s")
-    graph = (graph_ties | graph_teen) + pynini.cross("百", "00s")
-    graph |= pynini.cross("二", "2") + pynini.cross("千", "000s")
-    
+    graph = (graph_ties | graph_teen) + delete_space + pynini.cross("hundreds", "00s")
+    graph |= pynini.cross("two", "2") + delete_space + pynini.cross("thousands", "000s")
     graph |= (
         (graph_ties | graph_teen)
-        #+ delete_space
-        #+ (pynini.closure(NEMO_ALPHA, 1) + (pynini.cross("ies", "y") | pynutil.delete("s")))
-        @ (graph_ties | pynini.cross("十", "10"))
+        + delete_space
+        + (pynini.closure(NEMO_ALPHA, 1) + (pynini.cross("ies", "y") | pynutil.delete("s")))
+        @ (graph_ties | pynini.cross("ten", "10"))
         + pynutil.insert("s")
     )
     graph @= pynini.union("1", "2") + NEMO_DIGIT + NEMO_DIGIT + NEMO_DIGIT + "s"
@@ -91,11 +87,11 @@ def _get_year_graph():
 
     def _get_thousands_graph():
         graph_ties = _get_ties_graph()
-        graph_hundred_component = (graph_digit + delete_space + pynutil.delete("百")) | pynutil.insert("0")
+        graph_hundred_component = (graph_digit + delete_space + pynutil.delete("hundred")) | pynutil.insert("0")
         graph = (
             graph_digit
             + delete_space
-            + pynutil.delete("千")
+            + pynutil.delete("thousand")
             + delete_space
             + graph_hundred_component
             + delete_space
@@ -136,12 +132,12 @@ class DateFst(GraphFst):
         year_graph = pynutil.add_weight(year_graph, YEAR_WEIGHT)
         month_graph = _get_month_graph()
 
-        month_graph = pynutil.insert("月: \"") + month_graph + pynutil.insert("\"")
+        month_graph = pynutil.insert("month: \"") + month_graph + pynutil.insert("\"")
 
-        day_graph = pynutil.insert("日: \"") + pynutil.add_weight(ordinal_graph, -0.7) + pynutil.insert("\"")
+        day_graph = pynutil.insert("day: \"") + pynutil.add_weight(ordinal_graph, -0.7) + pynutil.insert("\"")
         graph_year = (
             delete_extra_space
-            + pynutil.insert("年: \"")
+            + pynutil.insert("year: \"")
             + pynutil.add_weight(year_graph, -YEAR_WEIGHT)
             + pynutil.insert("\"")
         )
@@ -159,7 +155,7 @@ class DateFst(GraphFst):
             + month_graph
             + optional_graph_year
         )
-        graph_year = pynutil.insert("年: \"") + (year_graph | _get_range_graph()) + pynutil.insert("\"")
+        graph_year = pynutil.insert("year: \"") + (year_graph | _get_range_graph()) + pynutil.insert("\"")
 
         final_graph = graph_mdy | graph_dmy | graph_year
         final_graph += pynutil.insert(" preserve_order: true")

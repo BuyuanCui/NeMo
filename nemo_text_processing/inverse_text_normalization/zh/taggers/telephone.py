@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
+from nemo_text_processing.inverse_text_normalization.en.utils import get_abs_path
+from nemo_text_processing.text_normalization.en.graph_utils import (
     NEMO_ALNUM,
     NEMO_ALPHA,
     NEMO_DIGIT,
@@ -62,7 +62,7 @@ class TelephoneFst(GraphFst):
         # country code, number_part, extension
         digit_to_str = (
             pynini.invert(pynini.string_file(get_abs_path("data/numbers/digit.tsv")).optimize())
-            | pynini.cross("0", pynini.union("o", "oh", "零")).optimize()
+            | pynini.cross("0", pynini.union("o", "oh", "zero")).optimize()
         )
 
         str_to_digit = pynini.invert(digit_to_str)
@@ -73,7 +73,7 @@ class TelephoneFst(GraphFst):
                     pynini.project(str(i) @ digit_to_str, "output")
                     + pynini.accep(" ")
                     + pynini.project(str(i) @ digit_to_str, "output"),
-                    pynutil.insert("两个 ") + pynini.project(str(i) @ digit_to_str, "output"),
+                    pynutil.insert("double ") + pynini.project(str(i) @ digit_to_str, "output"),
                 )
                 for i in range(10)
             ]
@@ -102,7 +102,7 @@ class TelephoneFst(GraphFst):
 
         country_code = (
             pynutil.insert("country_code: \"")
-            + pynini.closure(pynini.cross("加 ", "+"), 0, 1)
+            + pynini.closure(pynini.cross("plus ", "+"), 0, 1)
             + ((pynini.closure(str_to_digit + pynutil.delete(" "), 0, 2) + str_to_digit) | cardinal_option)
             + pynutil.insert("\"")
         )
@@ -129,7 +129,7 @@ class TelephoneFst(GraphFst):
         digit_or_double |= cardinal_option
         digit_or_double = digit_or_double.optimize()
 
-        ip_graph = digit_or_double + (pynini.cross(" 点 ", ".") + digit_or_double) ** 3
+        ip_graph = digit_or_double + (pynini.cross(" dot ", ".") + digit_or_double) ** 3
 
         graph |= pynutil.insert("number_part: \"") + ip_graph.optimize() + pynutil.insert("\"")
         graph |= (
