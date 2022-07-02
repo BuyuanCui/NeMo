@@ -33,6 +33,10 @@ except (ModuleNotFoundError, ImportError):
     PYNINI_AVAILABLE = False
 
 
+import pynini
+import nemo_text_processing
+from pynini.lib import pynutil
+
 def apply_fst(text,fst):#applies this function for test purposes: apply_fst("the text",the fst_you_built)
     try:
         print(pynini.shortestpath(text @fst).string())
@@ -88,7 +92,7 @@ class CardinalFst(GraphFst):
         graph_ten_thousands = ((graph_digits + delete_ten_thousands + graph_thousands) | (graph_digits + delete_ten_thousands + delete_zero + pynutil.insert("0") + graph_hundreds) | (graph_digits + delete_ten_thousands + delete_zero + pynutil.insert("00") + graph_all))| pynutil.insert("00000")
         
         #Grammer for 100000-999999 (hundred thousands-十万)
-        graph_hundred_thousands =  (tens + graph_ten_thousands) | pynutil.insert("000000")
+        graph_hundred_thousands = ((graph_tens + delete_ten_thousands + graph_thousands) | (graph_tens + delete_ten_thousands + delete_zero + pynutil.insert("000") + graph_digits) | (graph_tens + delete_ten_thousands + delete_zero + pynutil.insert("00") + graph_all) |(graph_tens + delete_ten_thousands + delete_zero + pynutil.insert("0") + graph_hundreds) )| pynutil.insert("000000")
         
         #grammar for millions 百万
         graph_millions = ((graph_hundreds + delete_ten_thousands + graph_thousands) |(graph_hundreds + delete_ten_thousands + delete_zero + pynutil.insert("000") + graph_digits) | (graph_hundreds + delete_ten_thousands + delete_zero + pynutil.insert("00") + graph_all) |(graph_hundreds + delete_ten_thousands + delete_zero + pynutil.insert("0") + graph_hundreds)) | pynutil.insert("0000000") 
@@ -121,7 +125,6 @@ class CardinalFst(GraphFst):
         clean_cardinal = clean_cardinal | "0" #Allow the existence of a "0"
         graph =  graph @ clean_cardinal
         
-        #new graph
         self.just_cardinals = graph
 
         #Token insertion
@@ -130,6 +133,10 @@ class CardinalFst(GraphFst):
         final_graph = self.add_tokens(final_graph)
         self.fst = final_graph
         
+
+#cardinal = CardinalFst().fst
+#exmaple = "一亿"
+#apply_fst(exmaple,cardinal)
 
 
 
