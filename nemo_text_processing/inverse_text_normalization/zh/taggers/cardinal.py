@@ -114,7 +114,7 @@ class CardinalFst(GraphFst):
         graph_hundred_billions = (graph_thousands + delete_hundred_millions + graph_ten_millions) | (graph_thousands + delete_hundred_millions + delete_zero + pynutil.insert("0") + graph_millions) | (graph_thousands + delete_hundred_millions + delete_zero + pynutil.insert("00") + graph_hundred_thousands)
         
         #combine all the graphs
-        graph = pynini.union(graph_hundred_billions, graph_ten_billions, graph_billions, graph_hundred_millions, graph_ten_millions, graph_millions, graph_hundred_thousands, graph_ten_thousands, graph_thousands, graph_hundreds, graph_all, zero)
+        graph = pynini.union(graph_hundred_billions, graph_ten_billions, graph_billions, graph_hundred_millions, graph_ten_millions, graph_millions, graph_hundred_thousands, graph_ten_thousands, graph_thousands, graph_hundreds, graph_all, graph_digits, zero,)
         
         #Formatting grammar
         #Removing leading zero (when there is a zero infront of a non-zero digit, e.g., 09,08)
