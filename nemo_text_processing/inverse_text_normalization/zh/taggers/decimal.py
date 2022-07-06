@@ -17,9 +17,9 @@ from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_pat
 from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     NEMO_DIGIT,
     GraphFst,
-    delete_extra_space,
-    delete_space,
 )
+from nemo_text_processing.inverse_text_normalization.zh.taggers.cardinal import CardinalFst
+
 
 try:
     import pynini
@@ -30,71 +30,35 @@ except (ModuleNotFoundError, ImportError):
     PYNINI_AVAILABLE = False
 
 
-def get_quantity(decimal: 'pynini.FstLike', cardinal_up_to_hundred: 'pynini.FstLike') -> 'pynini.FstLike':
-    """
-    Returns FST that transforms either a cardinal or decimal followed by a quantity into a numeral,
-    e.g. one million -> integer_part: "1" quantity: "million"
-    e.g. one point five million -> integer_part: "1" fractional_part: "5" quantity: "million"
-
-    Args: 
-        decimal: decimal FST
-        cardinal_up_to_hundred: cardinal FST
-    """
-    numbers = cardinal_up_to_hundred @ (
-        pynutil.delete(pynini.closure("0")) + pynini.difference(NEMO_DIGIT, "0") + pynini.closure(NEMO_DIGIT)
-    )
-    suffix = pynini.union("万", "十万", "百万", "千万", "亿", "十亿", "百亿","千亿","兆","十兆","百兆","千兆","京","十京","百京","千京","垓","十垓","百垓","千垓")
-    res = (
-        pynutil.insert("integer_part: \"")
-        + numbers
-        + pynutil.insert("\"")
-        + delete_extra_space
-        + pynutil.insert("quantity: \"")
-        + suffix
-        + pynutil.insert("\"")
-    )
-    res |= decimal + delete_extra_space + pynutil.insert("quantity: \"") + (suffix | "thousand") + pynutil.insert("\"")
+def get_quantity(decimal, cardinal):
+    suffix = pynini.union("万","十万","百万","千万","亿","十亿","百亿","千亿")
+    numbers = cardinal
+    res = (pynutil.insert("integer_part: \"") + numbers +pynutil.insert("\"") + pynutil.insert(" quantity: \"") + suffix + pynutil.insert("\"") )
+    res = res | (res + decimal + pynutil.insert(" quantity: \"") + suffix + pynutil.insert("\""))
     return res
 
-
 class DecimalFst(GraphFst):
-    """
-    Finite state transducer for classifying decimal
-        e.g. minus twelve point five o o six billion -> decimal { negative: "true" integer_part: "12"  fractional_part: "5006" quantity: "billion" }
-        e.g. one billion -> decimal { integer_part: "1" quantity: "billion" }
-    Args:
-        cardinal: CardinalFst
-    """
-
     def __init__(self, cardinal: GraphFst):
-        super().__init__(name="decimal", kind="classify")
-
-        cardinal_graph = cardinal.graph_no_exception
-
-        graph_decimal = pynini.string_file(get_abs_path("data/numbers/digit.tsv"))
-        graph_decimal |= pynini.string_file(get_abs_path("data/numbers/zero.tsv")) | pynini.cross("o", "0")
-
-        graph_decimal = pynini.closure(graph_decimal + delete_space) + graph_decimal
-        self.graph = graph_decimal
-
-        point = pynutil.delete("point")
-
-        optional_graph_negative = pynini.closure(
-            pynutil.insert("负: ") + pynini.cross("负", "\"true\"") + delete_extra_space, 0, 1
-        )
-
-        graph_fractional = pynutil.insert("fractional_part: \"") + graph_decimal + pynutil.insert("\"")
-        graph_integer = pynutil.insert("integer_part: \"") + cardinal_graph + pynutil.insert("\"")
-        final_graph_wo_sign = (
-            pynini.closure(graph_integer + delete_extra_space, 0, 1) + point + delete_extra_space + graph_fractional
-        )
-        final_graph = optional_graph_negative + final_graph_wo_sign
-
-        self.final_graph_wo_negative = final_graph_wo_sign | get_quantity(
-            final_graph_wo_sign, cardinal.graph_hundred_component_at_least_one_none_zero_digit
-        )
-        final_graph |= optional_graph_negative + get_quantity(
-            final_graph_wo_sign, cardinal.graph_hundred_component_at_least_one_none_zero_digit
-        )
-        final_graph = self.add_tokens(final_graph)
+        super().__init__(name="decimal",kind="classify")
+        cardinal = cardinal.just_cardinals
+        delete_decimal = pynutil.delete("点")
+        
+        graph_integer = pynutil.insert("integer_part: \"") + cardinal + pynutil.insert("\" ") 
+        graph_integer_or_none = graph_integer | pynutil.insert("integer_part: \"0\" ", weight=0.01)
+        
+        graph_string_of_cardinals = cardinal
+        graph_string_of_cardinals = pynini.closure(graph_string_of_cardinals,1)
+        graph_fractional = pynutil.insert("fractional_part: \"") + graph_string_of_cardinals + pynutil.insert("\"")
+        
+        graph_decimal_no_sign = graph_integer_or_none + pynutil.delete("点") + graph_fractional
+        
+        graph_negative = pynini.cross("负", "negative: \"-\" ") 
+        graph_negative = pynini.closure(graph_negative,0,1)
+        
+        graph_decimal = graph_negative + graph_decimal_no_sign
+        graph_decimal = graph_decimal | (graph_negative + get_quantity(graph_decimal_no_sign, cardinal))
+        
+        final_graph = self.add_tokens(graph_decimal)
         self.fst = final_graph.optimize()
+                                
+
