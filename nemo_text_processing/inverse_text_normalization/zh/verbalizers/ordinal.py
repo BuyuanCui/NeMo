@@ -28,4 +28,5 @@ class OrdinalFst(GraphFst):
     def __init__(self):
         super().__init__(name="ordinal", kind="verbalize")
         graph_integer = (pynutil.delete("integer:") + delete_space + pynutil.delete("\"") + pynini.closure(NEMO_DIGIT) + pynutil.delete("\""))
-        
+        delete_tokens = self.delete_tokens(graph_integer)
+        self.fst = delete_tokens.optimize()
