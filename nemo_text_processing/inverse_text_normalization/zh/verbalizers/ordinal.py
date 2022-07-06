@@ -27,5 +27,5 @@ except (ModuleNotFoundError, ImportError):
 class OrdinalFst(GraphFst):
     def __init__(self):
         super().__init__(name="ordinal", kind="verbalize")
-        graph_integer = (pynutil.delete("integer:") + delete_space + pynutil.delete("\"") + pynutil.delete(NEMO_DIGIT,1) + pynutil.delete("\""))
+        graph_integer = (pynutil.delete("integer:") + delete_space + pynutil.delete("\"") + pynini.closure(NEMO_DIGIT) + pynutil.delete("\""))
         
