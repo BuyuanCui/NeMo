@@ -128,7 +128,7 @@ class CardinalFst(GraphFst):
         self.just_cardinals = graph
 
         #Token insertion
-        optional_minus_graph = pynini.closure(pynutil.insert("negative: ") + pynini.cross("负", "\"-\"") + " ", 0, 1) 
+        optional_minus_graph = pynini.closure(pynutil.insert("negative: ") + pynini.cross("负", "\"-\"")) 
         final_graph = optional_minus_graph + pynutil.insert("integer: \"") + graph + pynutil.insert("\"")
         final_graph = self.add_tokens(final_graph)
         self.fst = final_graph
