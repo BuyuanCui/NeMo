@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_text_processing.inverse_text_normalization.zh.graph_utils import NEMO_NOT_QUOTE, GraphFst, delete_space
-
 try:
     import pynini
     from pynini.lib import pynutil
@@ -22,12 +20,9 @@ try:
 except (ModuleNotFoundError, ImportError):
     PYNINI_AVAILABLE = False
 
-from nemo_text_processing.inverse_text_normalization.zh.utils import get_abs_path
-from nemo_text_processing.inverse_text_normalization.zh.taggers.decimal import DecimalFst
 from nemo_text_processing.inverse_text_normalization.zh.graph_utils import (
     NEMO_DIGIT,
     GraphFst,
-    delete_extra_space,
     delete_space,
     NEMO_NON_BREAKING_SPACE,
     NEMO_NOT_QUOTE,
